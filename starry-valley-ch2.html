@@ -155,6 +155,7 @@ const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=false;
 let VW=940,VH=640;
 const T=32;
+const ZOOM=1.25;
 
 // ─── SAVE ──────────────────────────────────────────────────────────────────
 const SK='sv_ch2_v1';
@@ -860,7 +861,7 @@ function touchWater(x,y){
 // ─── MOVE ───────────────────────────────────────────────────────────────────
 function movePlayer(dx,dy){
   const P=G.P;
-  const spd=3.6;
+  const spd=4.2;
   const nx=P.x+dx*spd, ny=P.y+dy*spd;
   if(!collide(nx,P.y)) P.x=nx;
   if(!collide(P.x,ny)) P.y=ny;
@@ -1673,14 +1674,15 @@ function update(){
     p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.life--;return p.life>0;
   });
 
-  // camera — player stays at 60% vertical
+  // camera — player stays at 60% vertical (with 1.25x zoom)
   if(G.level>=1&&G.level<=LEVELS.length){
     const L=LEVELS[G.level-1];
-    const tx=P.x-VW/2, ty=P.y-VH*.62;
+    const zVW=VW/ZOOM, zVH=VH/ZOOM;
+    const tx=P.x-zVW/2, ty=P.y-zVH*.62;
     G.cam.x+=(tx-G.cam.x)*.16;
     G.cam.y+=(ty-G.cam.y)*.16;
-    G.cam.x=Math.max(0,Math.min(L.size.w*T-VW,G.cam.x));
-    G.cam.y=Math.max(0,Math.min(L.size.h*T-VH,G.cam.y));
+    G.cam.x=Math.max(0,Math.min(L.size.w*T-zVW,G.cam.x));
+    G.cam.y=Math.max(0,Math.min(L.size.h*T-zVH,G.cam.y));
   }
 }
 
@@ -1702,12 +1704,14 @@ function render(){
   const L=LEVELS[G.level-1];
   ctx.save();
   ctx.translate(-Math.floor(G.cam.x),-Math.floor(G.cam.y));
+  ctx.translate(VW/2,VH/2);ctx.scale(ZOOM,ZOOM);ctx.translate(-VW/(2*ZOOM),-VH/(2*ZOOM));
 
-  // tile floor
+  // tile floor (account for zoom in viewport bounds)
+  const zVW=VW/ZOOM, zVH=VH/ZOOM;
   const c0=Math.max(0,Math.floor(G.cam.x/T));
-  const c1=Math.min(L.size.w,Math.ceil((G.cam.x+VW)/T));
+  const c1=Math.min(L.size.w,Math.ceil((G.cam.x+zVW)/T));
   const r0=Math.max(0,Math.floor(G.cam.y/T));
-  const r1=Math.min(L.size.h,Math.ceil((G.cam.y+VH)/T));
+  const r1=Math.min(L.size.h,Math.ceil((G.cam.y+zVH)/T));
   for(let y=r0;y<r1;y++){
     for(let x=c0;x<c1;x++){
       ctx.fillStyle=(x+y)%2===0?L.bg:L.bgAlt;
