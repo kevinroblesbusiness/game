@@ -860,7 +860,7 @@ function touchWater(x,y){
 // ─── MOVE ───────────────────────────────────────────────────────────────────
 function movePlayer(dx,dy){
   const P=G.P;
-  const spd=3.6;
+  const spd=4.2;
   const nx=P.x+dx*spd, ny=P.y+dy*spd;
   if(!collide(nx,P.y)) P.x=nx;
   if(!collide(P.x,ny)) P.y=ny;
