@@ -1701,7 +1701,7 @@ function render(){
 
   const L=LEVELS[G.level-1];
   ctx.save();
-  ctx.translate(-Math.floor(G.cam.x),-Math.floor(G.cam.y));
+  ctx.translate(-G.cam.x,-G.cam.y);
 
   // tile floor
   const c0=Math.max(0,Math.floor(G.cam.x/T));
