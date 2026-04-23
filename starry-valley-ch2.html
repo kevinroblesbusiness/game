@@ -1042,6 +1042,7 @@ function spawnBoss(){
     midFightFired:[],
     defeated:false,
     phase:BD.phase||1,
+    shockwaves:[],
   };
   G.phase='boss';
   G.projectiles=[];
@@ -1078,6 +1079,12 @@ function updateBoss(){
   const nbx=B.px+B.moveDir.x, nby=B.py+B.moveDir.y;
   if(nbx>40&&nbx<L.size.w*T-40) B.px=nbx;
   if(nby>40&&nby<L.size.h*T-40) B.py=nby;
+
+  // update shockwaves
+  B.shockwaves=B.shockwaves.filter(sw=>{
+    sw.radius+=sw.speed;
+    return sw.radius<sw.maxRadius;
+  });
 
   // attack
   if(B.attackTimer>=ph.shootRate){
@@ -1124,6 +1131,15 @@ function fireAttack(boss,pattern,P){
   const dx=P.x-boss.px, dy=P.y-boss.py;
   const ang=Math.atan2(dy,dx);
   const spd=2.2+boss.currentPhase*.6;
+
+  // Root Warden shockwaves
+  if(boss.id==='root_warden'){
+    const swCount=boss.currentPhase===1?1:boss.currentPhase===2?2:3;
+    const swSpeed=boss.currentPhase===1?2:boss.currentPhase===2?3:4;
+    for(let i=0;i<swCount;i++){
+      boss.shockwaves.push({x:boss.px,y:boss.py,radius:0,maxRadius:150,speed:swSpeed});
+    }
+  }
 
   if(pattern==='roots'||pattern==='wave'){
     // 3-way spread
@@ -1669,6 +1685,23 @@ function update(){
       updateHUD();
     }
 
+    // shockwave collision
+    if(G.boss&&G.boss.shockwaves){
+      for(const sw of G.boss.shockwaves){
+        const d=Math.hypot(P.x-sw.x,P.y-sw.y);
+        if(d>sw.radius-20&&d<sw.radius+20){
+          if(P.blocking){
+            spawnParticles(P.x,P.y,'#52b788',8);
+          } else if(P.hf<=0){
+            G.hp--;P.hf=50;flashDamage();
+            if(G.hp<=0){playerDied();return;}
+            updateHUD();
+          }
+          break;
+        }
+      }
+    }
+
     checkPickups();
     if(G.phase==='boss') updateBoss();
     updateProjectiles();
@@ -1718,6 +1751,20 @@ function render(){
       ctx.fillStyle=(x+y)%2===0?L.bg:L.bgAlt;
       ctx.fillRect(x*T,y*T,T,T);
       if((x*3+y*7)%11===0){ctx.fillStyle='rgba(255,255,255,.03)';ctx.fillRect(x*T+4,y*T+8,2,2);}
+    }
+  }
+
+  // draw shockwaves
+  if(G.boss&&G.boss.shockwaves){
+    for(const sw of G.boss.shockwaves){
+      const prog=sw.radius/sw.maxRadius;
+      ctx.strokeStyle=`rgba(82,183,136,${(1-prog)*0.6})`;
+      for(let i=0;i<3;i++){
+        ctx.lineWidth=3-i;
+        ctx.beginPath();
+        ctx.arc(sw.x,sw.y,sw.radius-i*8,0,Math.PI*2);
+        ctx.stroke();
+      }
     }
   }
 
