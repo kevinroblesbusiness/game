@@ -1,0 +1,40 @@
+# Operating System Files
+.DS_Store                 # macOS system files
+Thumbs.db                 # Windows thumbnail cache
+*.swp                     # Vim swap files
+*.swo                     # Vim backup files
+*~                        # Backup files
+
+# Editor Files
+.vscode/                  # VS Code settings
+.idea/                    # IntelliJ settings
+*.sublime-project         # Sublime Text project files
+.project                  # Eclipse project file
+.classpath                # Eclipse classpath
+
+# Node.js (if using npm/build tools)
+node_modules/             # Installed packages
+npm-debug.log             # npm error logs
+package-lock.json         # Lock file (optional)
+
+# Python (if using Python tools)
+__pycache__/              # Python cache
+*.pyc                     # Python compiled files
+.env                      # Environment variables
+
+# Build artifacts
+dist/                     # Built files
+build/                    # Build directory
+*.bundle.js               # Bundled JavaScript
+
+# Temporary files
+*.tmp                     # Temporary files
+*.temp                    # Temporary files
+.cache/                   # Cache directory
+
+# Local development
+.env.local                # Local environment variables
+.settings.local.json      # Local settings
+
+# OS-specific
+.#*                       # macOS temporary files
