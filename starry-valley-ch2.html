@@ -1431,7 +1431,7 @@ function levelComplete(){
       ${G.clues.slice(-2).map(c=>'<p class="clue">• '+c+'</p>').join('')}
     </div>
     <p style="color:#fcd34d;font-size:13px">Next: ${nL.name}</p>
-    <p>${nL.intro.replace(/\n/g,'<br>')}</p>
+    <p>${nL.story.replace(/\n/g,'<br>')}</p>
     <div class="hint"><b>Tip:</b> ${nL.tip}</div>
     <div class="ml">
       <button onclick="startNextLevel()">Continue →</button>
