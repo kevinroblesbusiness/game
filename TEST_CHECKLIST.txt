@@ -1,0 +1,55 @@
+╔════════════════════════════════════════════════════════════════╗
+║           STARRY VALLEY - PRE-COMMIT TEST CHECKLIST             ║
+╚════════════════════════════════════════════════════════════════╝
+
+BEFORE EVERY COMMIT - Test in browser (dist/starry-valley-ch2.html)
+
+LEVEL 1 - THE WITHERED FARM
+  □ Game loads to title screen
+  □ No red errors in console (F12)
+  □ Can start game
+  □ Player appears on map
+  □ Arrow keys / WASD move player
+  □ Can collect gems (move over them)
+  □ Can talk to NPCs (press T)
+  □ Can open journal (press 4)
+  □ Can equip shield (press 2)
+  □ Can equip crystal staff (press 3)
+  □ Can shoot at enemies (space with staff)
+  □ Reach boss location
+  □ Boss appears
+  □ Boss attacks with projectiles
+  □ Shield blocks attacks
+  □ Crystal staff damages boss
+  □ Can defeat boss
+  □ Level complete screen appears
+
+LEVEL 2 - THE DROWNED MARKET
+  □ Level 2 loads correctly
+  □ Same movement/interaction tests
+  □ Boss appears and fights correctly
+  □ Can defeat boss
+
+LEVEL 3 - THE HOLLOW KING'S KEEP
+  □ Level 3 loads correctly
+  □ Same movement/interaction tests
+  □ Boss appears and fights correctly
+  □ Can defeat boss
+  □ Game completion screen appears
+
+CONSOLE CHECK
+  □ No red error messages
+  □ No warnings about undefined variables
+  □ Game runs at 60 FPS (smooth)
+
+FEATURE-SPECIFIC
+  □ New feature works as intended
+  □ New feature doesn't break old features
+  □ New feature has no console errors
+
+═══════════════════════════════════════════════════════════════════
+
+✅ ALL TESTS PASS = Safe to commit
+❌ ANY TEST FAILS = DO NOT COMMIT - revert changes
+
+═══════════════════════════════════════════════════════════════════
