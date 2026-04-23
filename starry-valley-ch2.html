@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Starry Valley — Chapter 2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Courier New',monospace;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;background:#020110;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+body{display:flex;align-items:center;justify-content:center}
+#wrap{width:100%;max-width:940px;height:100%;max-height:640px;background:#07031a;border-radius:12px;overflow:hidden;position:relative}
+canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;cursor:default}
+
+/* HUD */
+#hud{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;pointer-events:none;z-index:6;gap:6px;align-items:flex-start}
+.hudL,.hudR{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.hudR{pointer-events:auto}
+.pill{background:rgba(7,3,26,.9);border:1.5px solid #6d28d9;border-radius:5px;padding:3px 9px;color:#ddd6fe;font-size:11px;white-space:nowrap;line-height:1.5}
+.pill b{color:#fcd34d}
+.pill.hp b{color:#f9a8d4}
+#menu-btn{background:rgba(7,3,26,.9);border:1.5px solid #fbbf24;border-radius:5px;padding:3px 9px;color:#fcd34d;font-size:11px;cursor:pointer;font-family:inherit;pointer-events:auto}
+
+/* Boss health bar */
+#bossbar{position:absolute;top:44px;left:50%;transform:translateX(-50%);width:340px;z-index:6;display:none;text-align:center}
+#bossname{color:#f87171;font-size:12px;font-weight:bold;letter-spacing:2px;margin-bottom:3px;text-shadow:0 0 8px #ef4444}
+#bosstrack{background:rgba(7,3,26,.9);border:1.5px solid #7f1d1d;border-radius:4px;height:14px;overflow:hidden;position:relative}
+#bossbar-fill{height:100%;background:#ef4444;transition:width .2s;min-width:0}
+#bossbar-phase{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fca5a5;letter-spacing:1px}
+#bossbar-segment{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.3)}
+
+/* Player hearts */
+#hearts{position:absolute;top:44px;left:8px;z-index:6;display:flex;gap:3px}
+
+/* Toolbar */
+#toolbar{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:6}
+.slot{width:40px;height:40px;background:rgba(7,3,26,.88);border:2px solid #4c1d95;border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:border-color .15s}
+.slot.active{border-color:#fcd34d;background:rgba(124,58,237,.5)}
+.slot svg{width:24px;height:24px;pointer-events:none}
+.slot .k{position:absolute;bottom:-3px;right:-3px;background:#07031a;border:1px solid #4c1d95;border-radius:3px;font-size:9px;color:#a78bfa;padding:0 2px;line-height:12px;pointer-events:none}
+.slot .badge{position:absolute;top:-4px;right:-4px;background:#ef4444;border-radius:8px;font-size:8px;color:#fff;padding:0 3px;line-height:13px;pointer-events:none;display:none}
+
+/* D-pad */
+#dpad{position:absolute;bottom:10px;left:10px;width:124px;height:124px;z-index:6}
+.db{position:absolute;width:40px;height:40px;background:rgba(7,3,26,.9);border:2px solid #4c1d95;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#a78bfa;font-size:18px;cursor:pointer;touch-action:none}
+.db:active,.db.dn{background:#4c1d95;color:#fff}
+#du{top:0;left:42px}#dd{bottom:0;left:42px}#dl{top:42px;left:0}#dr{top:42px;left:84px}
+
+/* Action buttons */
+#abtns{position:absolute;bottom:10px;right:10px;display:flex;flex-direction:column;gap:6px;z-index:6}
+.ab{width:50px;height:50px;background:rgba(7,3,26,.9);border:2px solid #f59e0b;border-radius:25px;color:#fcd34d;font-size:11px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:none;font-family:inherit}
+.ab.talk{border-color:#22d3ee;color:#67e8f9}
+.ab:active{transform:scale(.93)}
+
+/* Dialog box */
+#dlgbox{position:absolute;bottom:0;left:0;right:0;background:rgba(5,2,14,.97);border-top:2px solid #7c3aed;padding:12px 16px 18px;z-index:25;display:none}
+#dlg-face{width:50px;height:50px;image-rendering:pixelated;border:2px solid #7c3aed;border-radius:6px;flex-shrink:0}
+#dlg-inner{display:flex;gap:12px;align-items:flex-start}
+#dlg-right{flex:1}
+#dlg-who{color:#fcd34d;font-size:13px;font-weight:bold;margin-bottom:5px}
+#dlg-text{color:#e9d5ff;font-size:12px;line-height:1.7;min-height:38px;margin-bottom:10px}
+#dlg-opts{display:flex;gap:6px;flex-wrap:wrap}
+.dopt{background:transparent;border:1.5px solid #7c3aed;border-radius:4px;color:#ddd6fe;font-family:inherit;font-size:11px;padding:5px 10px;cursor:pointer}
+.dopt:hover,.dopt:active{background:#4c1d95}
+
+/* Toast */
+#toast{position:absolute;top:72px;left:50%;transform:translateX(-50%);background:rgba(5,2,14,.95);border:1.5px solid #22d3ee;border-radius:6px;padding:7px 16px;color:#67e8f9;font-size:12px;z-index:18;display:none;white-space:nowrap;max-width:85%;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+
+/* Overlay (menus, cutscenes) */
+#overlay{position:absolute;inset:0;background:rgba(5,2,14,.97);display:flex;align-items:center;justify-content:center;z-index:50;overflow-y:auto;padding:20px}
+.screen{max-width:520px;width:100%;text-align:center;color:#e9d5ff}
+.screen h1{color:#fcd34d;font-size:24px;letter-spacing:3px;margin-bottom:6px}
+.screen h2{color:#fcd34d;font-size:17px;margin-bottom:10px}
+.screen p{font-size:12px;line-height:1.85;color:#c4b5fd;margin-bottom:9px}
+.screen .sub{color:#f9a8d4;font-size:11px;letter-spacing:2px;margin:-3px 0 12px}
+.screen .story{background:rgba(124,58,237,.15);border:1px solid #4c1d95;border-radius:6px;padding:12px 14px;margin:10px auto;text-align:left;max-width:440px;font-size:12px;line-height:1.85;color:#ddd6fe}
+.screen .story b{color:#fcd34d}
+.screen .hint{background:rgba(124,58,237,.18);border:1px solid #4c1d95;border-radius:6px;padding:10px 14px;margin:10px auto;text-align:left;font-size:12px;line-height:1.9;max-width:420px}
+.screen .hint b{color:#fcd34d}
+.screen kbd{background:#120930;border:1px solid #4c1d95;border-bottom:2px solid #4c1d95;border-radius:3px;padding:1px 6px;font-size:10px;color:#ddd6fe;font-family:inherit}
+.screen .ml{display:flex;flex-direction:column;gap:8px;max-width:260px;margin:14px auto 0}
+.screen button{background:#4c1d95;border:2px solid #7c3aed;border-radius:6px;color:#fff;font-family:inherit;font-size:13px;padding:9px 20px;cursor:pointer;font-weight:bold;width:100%}
+.screen button:hover{background:#6d28d9}
+.screen button.sec{background:transparent;border-color:#4c1d95;color:#a78bfa}
+.screen button.sec:hover{background:#1e0d3f}
+.screen .art{margin:10px auto;display:flex;justify-content:center}
+.screen .art canvas{image-rendering:pixelated;border:2px solid #4c1d95;border-radius:8px}
+.screen .clue{color:#fcd34d;font-size:11px;padding-left:6px;margin:2px 0}
+.screen .redwarn{border-color:#ef4444;background:rgba(239,68,68,.1)}
+.screen .redwarn b{color:#f87171}
+.screen .hearts{font-size:20px;margin:6px 0;letter-spacing:3px;color:#f9a8d4}
+
+/* Combat flash overlay */
+#dmgflash{position:absolute;inset:0;background:rgba(239,68,68,.35);pointer-events:none;z-index:8;opacity:0;transition:opacity .1s}
+
+@media(max-width:700px){
+  .pill{font-size:10px;padding:2px 7px}
+  #bossbar{width:240px;top:42px}
+  .db{width:36px;height:36px;font-size:15px}
+  #du,#dd{left:38px}#dl{top:38px}#dr{top:38px;left:76px}
+  .ab{width:44px;height:44px}
+}
+</style>
+</head>
+<body>
+<div id="wrap">
+<canvas id="c" width="940" height="640"></canvas>
+<div id="hud">
+  <div class="hudL">
+    <div class="pill">Ch.<b id="hch">2</b> L.<b id="hlvl">1</b></div>
+    <div class="pill">Gems <b id="hgems">0</b></div>
+    <div class="pill">Stars <b id="hstars">0</b></div>
+  </div>
+  <div class="hudR">
+    <div class="pill" id="hquest">—</div>
+    <button id="menu-btn" onclick="openMenu()">☰</button>
+  </div>
+</div>
+<div id="hearts"></div>
+<div id="bossbar">
+  <div id="bossname">—</div>
+  <div id="bosstrack"><div id="bossbar-fill" style="width:100%"></div><div id="bossbar-phase"></div><div id="bossbar-segment"></div></div>
+</div>
+<div id="toast"></div>
+<div id="dmgflash"></div>
+<div id="toolbar">
+  <div class="slot active" data-t="hand" title="Hand (1): Collect gems, interact, talk"><svg viewBox="0 0 24 24" fill="none"><path d="M8 13V6a2 2 0 114 0v5m0 0V4a2 2 0 114 0v7m0 0V6a2 2 0 114 0v8a6 6 0 01-6 6H9l-5-5 2-2 3 1" stroke="#fcd34d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="k">1</span></div>
+  <div class="slot" data-t="shield" title="Shield (2): Block boss attacks for 2 seconds — costs 1 gem to charge"><svg viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#60a5fa" stroke-width="1.5" fill="#1e40af" fill-opacity=".3"/></svg><span class="k">2</span><span class="badge" id="badge-shield">0</span></div>
+  <div class="slot" data-t="crystal" title="Crystal Staff (3): Shoot a star bolt at the boss — earned after Level 1"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2l2 7h7l-6 4 2 7-5-4-5 4 2-7-6-4h7z" stroke="#a78bfa" stroke-width="1.5" fill="#4c1d95" fill-opacity=".4"/></svg><span class="k">3</span><span class="badge" id="badge-crystal">!</span></div>
+  <div class="slot" data-t="journal" title="Journal (4): Review clues and story so far"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="#86efac" stroke-width="1.5" fill="#14532d" fill-opacity=".3"/><path d="M8 7h8M8 11h8M8 15h5" stroke="#86efac" stroke-width="1.5" stroke-linecap="round"/></svg><span class="k">4</span></div>
+</div>
+<div id="dpad">
+  <div class="db" id="du">▲</div><div class="db" id="dl">◀</div>
+  <div class="db" id="dr">▶</div><div class="db" id="dd">▼</div>
+</div>
+<div id="abtns">
+  <div class="ab talk" id="btn-talk">TALK</div>
+  <div class="ab" id="btn-act">ACT</div>
+</div>
+<div id="dlgbox">
+  <div id="dlg-inner">
+    <canvas id="dlg-face" width="32" height="32"></canvas>
+    <div id="dlg-right">
+      <div id="dlg-who"></div>
+      <div id="dlg-text"></div>
+      <div id="dlg-opts"></div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><div class="screen" id="scr"></div></div>
+</div>
+
+<script>
+'use strict';
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+let VW=940,VH=640;
+const T=32;
+
+// ─── SAVE ──────────────────────────────────────────────────────────────────
+const SK='sv_ch2_v1';
+function save(){try{localStorage.setItem(SK,JSON.stringify({level:G.level,gems:G.stars,clues:G.clues,hasStaff:G.hasStaff}))}catch(e){}}
+function loadSave(){try{const r=localStorage.getItem(SK);return r?JSON.parse(r):null}catch(e){return null}}
+function clearSave(){try{localStorage.removeItem(SK)}catch(e){}}
+
+// ─── GLOBAL STATE ──────────────────────────────────────────────────────────
+const G={
+  phase:'title',    // title | play | dialog | boss | cutscene | menu | over
+  level:1,
+  tick:0,
+  hp:5, maxHp:5,
+  stars:0,          // persistent currency
+  gems:0,           // per-level collectibles
+  gemsNeeded:5,
+  shieldCharge:0,   // 0-3 charges
+  hasStaff:false,
+  clues:[],
+  tool:'hand',
+  keys:{},
+  cam:{x:0,y:0},
+  P:{x:0,y:0,dir:'down',moving:false,wf:0,wt:0,hf:0,sw:0,blocking:false,blockTimer:0},
+  boss:null,
+  npcs:[],
+  objs:[],         // {t,x,y,collected,defeated,...}
+  projectiles:[],
+  particles:[],
+  dialog:null,
+  toastT:0,
+  questText:'',
+  cutscene:null,
+  bossIntroShown:false,
+};
+
+// ─── LEVEL DATA ─────────────────────────────────────────────────────────────
+// Story: Chapter 2 — "The Long Way Home"
+// Kevin is back safe from Chapter 1. Three months later, a creeping darkness is
+// spreading across the valley. Angie and Kevin investigate together — but Kevin
+// goes missing AGAIN in Level 2, and in Level 3, Angie must fight the source
+// of the darkness: the ancient Hollow King, whose loneliness corrupted the land.
+
+const LEVELS=[
+{
+  id:1,
+  name:'The Withered Farm',
+  bg:'#1a1206',bgAlt:'#120d04',
+  size:{w:36,h:22},
+  gemsNeeded:5,
+  startPos:{x:3,y:11},
+  story:`Three months after Kevin's rescue, the valley is changing.\n\nCrops are dying. The river has gone grey. Farmers are leaving.\n\nAngie and Kevin set out to find the source — starting at old farmer Otis's field, where the blight began.`,
+  storyTone:'warning',
+  tip:'Collect 5 star-seeds from the withered field. Find Otis and ask what happened. Defeat the <b>Root Warden</b> to cleanse the blight.',
+  preChain:[
+    {speaker:'Kevin',color:'#2563eb',hair:'#78350f',skin:'#fde68a',
+     lines:[
+       "Angie... look at this. The whole east field. Dead.",
+       "Otis planted these himself. He's 70 years old. This is everything to him.",
+       "I asked around the village. People are scared. They say it started at night — a creeping grey mist.",
+       "We need to find out what's causing this. Together."
+     ]},
+    {speaker:'Angie',color:'#6d28d9',hair:'#78350f',skin:'#fde68a',
+     lines:[
+       "I've never seen blight move this fast. Something is feeding on this place.",
+       "Kevin — promise me. We stay together this time. No wandering off alone.",
+       "(Kevin laughs nervously.)",
+       "...Fine. Together."
+     ]}
+  ],
+  npcs:[
+    {id:'otis',name:'Farmer Otis',x:8,y:11,color:'#78350f',hair:'#78350f',skin:'#fde68a',
+     dialog:[
+       {a:"Oh — Angie! And Kevin! You came. I didn't know who else to call.",emotion:'sad'},
+       {q:'What happened here?',a:"It was three weeks ago. I woke at dawn and the whole east field was grey. I could hear it — this low hum, like the earth was crying.",emotion:'scared'},
+       {q:'Did you see anything?',a:"A creature. Roots and shadows tangled together. I tried to chase it off with my lantern but it... absorbed the light. Just drank it right up.",emotion:'scared',clue:'A shadow creature absorbs light — lanterns are useless against it'},
+       {q:'How do we stop it?',a:"My grandmother used to say: 'Star-seeds carry memory of the sun. Plant them back in the dark, and the dark remembers what it forgot.' Collect the seeds scattered in the field. They glow faint gold.",emotion:'hopeful'},
+       {q:'Will you be okay?',a:"I'll be fine, child. I've buried three harvests before. I'm not leaving my farm. Go — do what I can't.",emotion:'sad'},
+     ]},
+    {id:'kevin_l1',name:'Kevin',x:14,y:8,color:'#2563eb',hair:'#78350f',skin:'#fde68a',isKevin:true,
+     dialog:[
+       {a:"These seeds — they're still warm. Like they're holding on to something.",emotion:'wonder'},
+       {q:'That\'s beautiful.',a:"Yeah. Otis has tended this land for fifty years. His care is literally stored in these seeds. That's why the shadow can't fully kill them.",emotion:'moved',clue:'The star-seeds hold fifty years of Otis\'s care'},
+       {q:'Are you scared?',a:"Honestly? Yeah. But scared is okay when you're not alone. Right?",emotion:'honest'},
+       {q:'Stay close, okay?',a:"Always. You know — you're the only person I'd follow into a blighted field at dawn, Angie. That's either bravery or you're a bad influence.",emotion:'laugh'},
+     ]},
+    {id:'mara',name:'Mara the Seedkeeper',x:24,y:14,color:'#16a34a',hair:'#365314',skin:'#d9f99d',
+     dialog:[
+       {a:"You're collecting the seeds? Good. Angie, isn't it? Kevin told me about you.",emotion:'smile'},
+       {q:'What do you know about the blight?',a:"It's not random. The shadow follows old ley lines — ancient energy paths. It's like something is draining the valley from below.",emotion:'concerned',clue:'The blight follows ancient underground ley lines'},
+       {q:'How do we fight it?',a:"At the heart of each blight zone is a Root Warden — a creature made of corrupted roots and stolen light. Your crystal staff — do you have it? It's the only thing that can cut through that shadow.",emotion:'urgent'},
+       {q:'What is the Root Warden?',a:"It was once just a root system. A tree's immune defense. The darkness corrupted it, turned its protective instinct into aggression. It doesn't know it's hurting things. It thinks it's protecting something.",emotion:'sad',clue:'The Root Warden was corrupted — it doesn\'t know it\'s causing harm'},
+     ]}
+  ],
+  bossTriggerGems:5,
+  boss:{
+    id:'root_warden',
+    name:'ROOT WARDEN',
+    hp:80, maxHp:80,
+    phase:1,
+    x:30,y:11,
+    color:'#1a4a0a',
+    size:44,
+    preDialog:[
+      {speaker:'Root Warden',color:'#4ade80',
+       lines:["*a low grinding sound, like wood splitting*","*roots thrash from the ground in a ring*","*two pale lights open in the darkness — not eyes, but wounds*"]},
+      {speaker:'Angie',color:'#6d28d9',lines:["It's huge. Kevin — get back!"]},
+      {speaker:'Kevin',color:'#2563eb',lines:["I'm not leaving you. I'll draw its attention — you hit it from the side!","Don't argue with me right now, Angie. GO!"]},
+    ],
+    postDialog:[
+      {speaker:'Root Warden',color:'#4ade80',lines:["*a low, agonised groan*","*the roots slowly retract into the soil*","*something like relief in the sound — like something that was in pain has been freed*"]},
+      {speaker:'Kevin',color:'#2563eb',lines:["It's retreating. Angie — you did it.","...Did it just sound like it was... crying?"]},
+      {speaker:'Angie',color:'#6d28d9',lines:["It was corrupted. Mara was right. It wasn't evil — it was just lost.","Kevin. The blight is fading. Look at the field."]},
+      {speaker:'Kevin',color:'#2563eb',lines:["...Otis is going to cry when he sees this.","Good tears though. The best kind."]},
+    ],
+    loot:'staff',
+    phases:[
+      {hpThreshold:1.0, pattern:'roots', speed:1.2, shootRate:120, desc:'phase 1'},
+      {hpThreshold:0.6, pattern:'sweep', speed:1.7, shootRate:80, desc:'phase 2 — faster!'},
+      {hpThreshold:0.3, pattern:'frenzy',speed:2.2, shootRate:50, desc:'ENRAGED'},
+    ],
+    attackDesc:{
+      roots:'Shoots root-spears — dodge sideways',
+      sweep:'Sweeps a root arc — jump away',
+      frenzy:'Spins root ring — stay moving!'
+    }
+  },
+  objs:[
+    {t:'gem',x:6,y:8},{t:'gem',x:10,y:5},{t:'gem',x:18,y:13},{t:'gem',x:22,y:8},{t:'gem',x:28,y:6},
+    {t:'tree',x:2,y:2},{t:'tree',x:34,y:2},{t:'tree',x:2,y:19},{t:'tree',x:34,y:19},
+    {t:'rock',x:12,y:3},{t:'rock',x:20,y:5},{t:'rock',x:16,y:17},{t:'rock',x:26,y:15},
+    {t:'dead',x:7,y:7},{t:'dead',x:9,y:13},{t:'dead',x:15,y:9},{t:'dead',x:21,y:11},{t:'dead',x:25,y:7},
+    {t:'dead',x:11,y:15},{t:'dead',x:17,y:5},{t:'dead',x:23,y:13},{t:'dead',x:29,y:9},
+    {t:'sign',x:5,y:5,msg:'Otis Farm — est. 1954. "The land remembers kindness."'},
+    {t:'portal',x:33,y:11},
+  ]
+},
+
+{
+  id:2,
+  name:'The Drowned Market',
+  bg:'#06101a',bgAlt:'#04090f',
+  size:{w:38,h:24},
+  gemsNeeded:6,
+  startPos:{x:3,y:12},
+  story:`The blight reached the valley market. The river flooded grey water into the stalls at night.\n\nTraders fled. Children went missing.\n\nKevin heard a child crying near the flooded east docks — and went to help before Angie could stop him.\n\nNow Angie is alone, and Kevin's lantern is floating in the grey water.`,
+  storyTone:'grief',
+  tip:'Collect 6 tide-crystals. Find the missing children. Defeat the <b>Grey Tide Witch</b> — but she is not what she seems.',
+  preChain:[
+    {speaker:'Angie',color:'#6d28d9',hair:'#78350f',skin:'#fde68a',
+     lines:[
+       "Kevin, wait — don't go in there alone!",
+       "...He was already running. He heard a child crying.",
+       "That's Kevin. He never thinks about himself first.",
+       "(She picks up his lantern from the water.)",
+       "I'm coming, Kevin. I'm always coming."
+     ]},
+  ],
+  npcs:[
+    {id:'child_maya',name:'Maya (age 7)',x:10,y:10,color:'#e879f9',hair:'#78350f',skin:'#fde68a',isChild:true,
+     dialog:[
+       {a:"Please... the grey lady took my brother. She came out of the water and she took him.",emotion:'terror'},
+       {q:'Where did she take him?',a:"The old dock. The grey water. She said she was lonely. She said she just wanted someone to stay.",emotion:'scared',clue:'The Grey Tide Witch is lonely — she takes people to keep her company'},
+       {q:'Are you hurt?',a:"No. The nice boy — Kevin? He found me hiding and told me to wait here for you. He said 'Angie will come. She always does.'",emotion:'sad',clue:'Kevin is somewhere in the flooded docks'},
+       {q:'Kevin said that?',a:"Yeah. He sounded really sure about it. Then he went to find my brother.",emotion:'wonder'},
+     ]},
+    {id:'trader_sol',name:'Trader Solomon',x:18,y:8,color:'#92400e',hair:'#78350f',skin:'#fde68a',
+     dialog:[
+       {a:"You're Angie, right? Kevin said you'd come. He left something for you — here.",emotion:'grim'},
+       {q:'What is this?',a:"A shield crystal. He found it in the old stall. Said 'my best friend is going to need this more than I do.' He really talks about you a lot, kid.",emotion:'moved',clue:'Kevin left a shield crystal for Angie',gives:'shield'},
+       {q:'Did you see where he went?',a:"East dock. Into the grey. I tried to follow but... the water doesn't behave right near her. It pulls inward, like a drain.",emotion:'scared'},
+       {q:'Who is the Grey Tide Witch?',a:"Old story. A woman who drowned in this river a hundred years ago. Loved these markets more than anything. When she died, her grief stayed in the water.",emotion:'sad',clue:'The Grey Tide Witch drowned a century ago — her grief became the grey water'},
+     ]},
+    {id:'fisherman',name:'Old Nan',x:28,y:16,color:'#64748b',hair:'#1e293b',skin:'#cbd5e1',
+     dialog:[
+       {a:"So you're going in after her. I've seen your kind before — full of heart, short on sense.",emotion:'gruff'},
+       {q:'Do you know how to beat her?',a:"She attacks with water and sound — her grief made physical. Shield blocks water. Your star-staff cuts through the grief. But here's the part no one tells you...",emotion:'grim'},
+       {q:'What part?',a:"When you weaken her enough, she'll speak. Listen to her. Don't just fight. She's been alone for a century. The listening matters as much as the hitting.",emotion:'urgent',clue:'The Grey Tide Witch needs to be heard, not just defeated'},
+       {q:'What if I can\'t beat her?',a:"You'll beat her. You came all this way for a friend. That kind of love is stronger than any century of grief. Don't doubt that.",emotion:'kind'},
+     ]}
+  ],
+  bossTriggerGems:6,
+  boss:{
+    id:'grey_tide',
+    name:'GREY TIDE WITCH',
+    hp:120, maxHp:120,
+    phase:1,
+    x:32,y:12,
+    color:'#0891b2',
+    size:46,
+    preDialog:[
+      {speaker:'Grey Tide Witch',color:'#67e8f9',
+       lines:["*the grey water rises, spiraling into a form — a woman, but made of water and sorrow*","Stay... please. I only wanted company. I only wanted someone to stay."]},
+      {speaker:'Kevin',color:'#2563eb',lines:["Angie! I'm here — she won't hurt you, she just — she's scared!"]},
+      {speaker:'Grey Tide Witch',color:'#67e8f9',lines:["Everyone leaves the river. Everyone forgets. Why won't anyone stay?"]},
+      {speaker:'Angie',color:'#6d28d9',lines:["I hear you. I'm sorry you're alone. But you can't keep people against their will.","Release them — and I promise, I'll listen to your story."]},
+    ],
+    midFightDialog:[
+      {hpPct:0.5,
+       lines:[
+         {speaker:'Grey Tide Witch',color:'#67e8f9',line:"You're still here... why are you still fighting me?"},
+         {speaker:'Angie',color:'#6d28d9',line:"Because hurting people isn't love! Let them go!"},
+       ]
+      }
+    ],
+    postDialog:[
+      {speaker:'Grey Tide Witch',color:'#67e8f9',lines:["*the grey water slowly clears to a cool, bright blue*","I... I remember now. The sound of the market. The smell of bread. I loved this place.",   "I just... didn't want to be forgotten."]},
+      {speaker:'Angie',color:'#6d28d9',lines:["You won't be. I'll make sure of it. Trader Solomon will tell your story. People will know your name."]},
+      {speaker:'Grey Tide Witch',color:'#67e8f9',lines:["*a long pause*","...Thank you. For not running. For listening.","*she begins to dissolve, peacefully, into the now-clear river*"]},
+      {speaker:'Kevin',color:'#2563eb',lines:["Angie... you're kind of incredible, you know that?"]},
+      {speaker:'Angie',color:'#6d28d9',lines:["Oh shut up. Are you hurt?"]},
+      {speaker:'Kevin',color:'#2563eb',lines:["Ha. I'm fine. Little wet. Angie—","—I really thought you might not come this time."]},
+      {speaker:'Angie',color:'#6d28d9',lines:["Kevin. I will always come. You're my best friend. That's not negotiable."]},
+    ],
+    phases:[
+      {hpThreshold:1.0,pattern:'wave',speed:1.0,shootRate:100,desc:'phase 1 — water waves'},
+      {hpThreshold:0.6,pattern:'spiral',speed:1.5,shootRate:70,desc:'phase 2 — spiral tide'},
+      {hpThreshold:0.35,pattern:'grief',speed:1.9,shootRate:45,desc:'GRIEF SURGE'},
+    ],
+  },
+  objs:[
+    {t:'gem',x:8,y:7},{t:'gem',x:14,y:5},{t:'gem',x:20,y:9},{t:'gem',x:24,y:14},{t:'gem',x:30,y:7},{t:'gem',x:12,y:17},
+    {t:'water',x:6,y:14},{t:'water',x:7,y:14},{t:'water',x:6,y:15},{t:'water',x:7,y:15},
+    {t:'water',x:22,y:16},{t:'water',x:23,y:16},{t:'water',x:24,y:16},
+    {t:'water',x:28,y:12},{t:'water',x:29,y:12},{t:'water',x:30,y:12},
+    {t:'stall',x:10,y:11},{t:'stall',x:16,y:6},{t:'stall',x:22,y:10},
+    {t:'tree',x:2,y:2},{t:'tree',x:36,y:2},{t:'tree',x:2,y:21},{t:'tree',x:36,y:21},
+    {t:'rock',x:15,y:18},{t:'rock',x:25,y:5},{t:'rock',x:32,y:18},
+    {t:'thorns',x:11,y:13},{t:'thorns',x:19,y:15},{t:'thorns',x:27,y:10},
+    {t:'sign',x:5,y:12,msg:'"Valley Market — Closed until further notice. Do not enter the east docks."'},
+    {t:'portal',x:36,y:12},
+  ]
+},
+
+{
+  id:3,
+  name:'The Hollow King\'s Keep',
+  bg:'#120524',bgAlt:'#0d0318',
+  size:{w:40,h:26},
+  gemsNeeded:7,
+  startPos:{x:3,y:13},
+  story:`The blight has a source: an ancient keep at the valley's heart.\n\nThe Hollow King — once the valley's guardian — lost his purpose when the people forgot him. His isolation curdled into corruption that now spreads outward, dying everything it touches.\n\nAngie and Kevin stand at the gate.\n\nThis ends here.`,
+  storyTone:'epic',
+  tip:'Find 7 memory-shards. The Hollow King has 3 phases — each harder. Use your shield when he charges. Use the staff to deal damage. Survive.',
+  preChain:[
+    {speaker:'Kevin',color:'#2563eb',hair:'#78350f',skin:'#fde68a',
+     lines:[
+       "Angie. This is the place. I can feel it — the whole valley's sorrow is coming from here.",
+       "You know we don't have to go in. We could go back. Get help. Come back with more people.",
+       "(He pauses.)",
+       "...We both know we're going in though, don't we.",
+     ]},
+    {speaker:'Angie',color:'#6d28d9',hair:'#78350f',skin:'#fde68a',
+     lines:[
+       "We're going in. But Kevin — if it gets too dangerous—",
+       "No. Don't. Don't say what you're about to say.",
+       "You were going to say 'run', weren't you.",
+       "(A beat.)",
+       "Yeah. I was.",
+       "...Together, then.",
+     ]},
+  ],
+  npcs:[
+    {id:'spirit_vera',name:'Memory Spirit Vera',x:12,y:10,color:'#818cf8',hair:'#3730a3',skin:'#e0e7ff',
+     dialog:[
+       {a:"Children from the valley. You came to face him. How brave. How foolish.",emotion:'sad'},
+       {q:'Tell us about the Hollow King.',a:"He was good once. He guarded this valley for three hundred years. Kept the rivers full, the soil rich, the winters short. He asked for nothing in return except... to be remembered.",emotion:'wistful',clue:'The Hollow King once protected the valley for 300 years'},
+       {q:'What happened to him?',a:"The people prospered. They built towns. Built churches to other gods. Forgot the old guardian. He waited. Waited. For a single voice to call his name.",emotion:'tragic',clue:'People forgot the Hollow King — forgetting him destroyed him'},
+       {q:'How do we reach him?',a:"The memory-shards scattered through the keep are pieces of who he was. Gather them. Show him he is still remembered. Only then will the final gate open.",emotion:'urgent',clue:'The memory-shards can remind the Hollow King of who he once was'},
+       {q:'Can he be saved?',a:"That... I don't know. But it matters that you ask. That you come with that intention.",emotion:'moved'},
+     ]},
+    {id:'kevin_l3',name:'Kevin',x:22,y:16,color:'#2563eb',hair:'#78350f',skin:'#fde68a',isKevin:true,
+     dialog:[
+       {a:"I found one of the memory-shards. Angie, look — when I touched it I saw him. This giant, lonely figure just... watching the valley. Watching people live their lives. Never being thanked.",emotion:'moved'},
+       {q:'That\'s heartbreaking.',a:"Yeah. We forget that things that give and give can run empty too. Not just people. Places. Old guardians. Things we take for granted.",emotion:'thoughtful'},
+       {q:'Do you think we can save him?',a:"I think... even if we can't, we should try. Because the trying is what matters. You taught me that.",emotion:'determined'},
+       {q:'I taught you that?',a:"Every time you came looking for me. Every time you showed up even when it was hard. You taught me that the people you care about are worth fighting for. No matter what.",emotion:'heartfelt',clue:'Angie fights for people worth caring about — that is her strength'},
+     ]},
+    {id:'hollow_echo',name:'Hollow Echo',x:32,y:8,color:'#7c3aed',hair:'#1e1b4b',skin:'#c4b5fd',
+     dialog:[
+       {a:"*a whisper that has no body*  Do you fear what you will find at the end?",emotion:'eerie'},
+       {q:'Yes.',a:"Good. Fear means you understand the weight. The King has three faces: his rage, his grief, and his forgotten self. Each must be faced.",emotion:'solemn',clue:'The Hollow King has three phases: rage, grief, and his true self'},
+       {q:'What weapon works against him?',a:"Your staff burns through the corruption. Your shield deflects his memory-blasts. But in the third phase — put the weapons down. Speak to him. Call his name: Eryndal.",emotion:'urgent',clue:'The Hollow King\'s true name is Eryndal — speak it in the final phase'},
+       {q:'Why are you helping us?',a:"Because I am what is left of his kindness. A fragment of what he used to be. I have been waiting three hundred years for someone to care enough to come.",emotion:'sad'},
+     ]}
+  ],
+  bossTriggerGems:7,
+  boss:{
+    id:'hollow_king',
+    name:'HOLLOW KING — ERYNDAL',
+    hp:200, maxHp:200,
+    phase:1,
+    x:35,y:13,
+    color:'#4c1d95',
+    size:52,
+    preDialog:[
+      {speaker:'Hollow King',color:'#c4b5fd',
+       lines:["*the keep shakes*","*a voice like crumbling stone and distant thunder*","YOU COME TO SLAY ME? LIKE ALL THE REST WHO FORGOT ME?","THREE HUNDRED YEARS. NOT ONE VOICE. NOT ONE NAME."]},
+      {speaker:'Angie',color:'#6d28d9',lines:["We know your name! You are Eryndal — guardian of the valley!"]},
+      {speaker:'Hollow King',color:'#c4b5fd',lines:["*a pause that shakes the walls*","...That name. WHERE DID YOU LEARN THAT NAME?","IT HAS BEEN... SO LONG...","NO. NO. THIS IS A TRICK. FIGHT ME."]},
+      {speaker:'Kevin',color:'#2563eb',lines:["Angie — he heard you. Keep going.","I've got your back. Whatever you need."]},
+    ],
+    midFightDialog:[
+      {hpPct:0.6,
+       lines:[
+         {speaker:'Hollow King',color:'#c4b5fd',line:"WHY DO YOU PERSIST? YOU CANNOT WIN."},
+         {speaker:'Angie',color:'#6d28d9',line:"We're not here to win. We're here for you, Eryndal!"},
+       ]
+      },
+      {hpPct:0.3,
+       lines:[
+         {speaker:'Hollow King',color:'#c4b5fd',line:"*the roar falters*  ...eryndal. i... i remember that name..."},
+         {speaker:'Kevin',color:'#2563eb',line:"Angie — something's changing. He's remembering!"},
+       ]
+      }
+    ],
+    postDialog:[
+      {speaker:'Hollow King',color:'#c4b5fd',lines:["*the darkness lifts*","*a massive figure, ancient and exhausted, becomes visible for the first time*","...I remember. The first spring. The valley when it was new. I chose to protect it.",   "I chose it. And it was enough. Even if no one remembered. It... was still enough."]},
+      {speaker:'Angie',color:'#6d28d9',lines:["Eryndal. People DO remember you. The water that runs clear — that was you. The soil that grows things — that's you. They just forgot to look."]},
+      {speaker:'Hollow King',color:'#c4b5fd',lines:["*a sound like a storm that is ending*","You remind me of the valley when it was young. Full of that same stubborn kindness.","Take this. The blight will pass now. I will... rest. Finally rest.","Remember me, child. Just... once in a while."]},
+      {speaker:'Kevin',color:'#2563eb',lines:["Angie. He's gone.","...The sky. Angie, look at the sky."]},
+      {speaker:'Angie',color:'#6d28d9',lines:["Stars. So many stars.","...Kevin?"]},
+      {speaker:'Kevin',color:'#2563eb',lines:["Yeah?"]},
+      {speaker:'Angie',color:'#6d28d9',lines:["Thank you. For always coming with me. Even when it's terrifying."]},
+      {speaker:'Kevin',color:'#2563eb',lines:["Thank you for always showing up for people. Even ancient forgotten guardian kings.","That's just who you are, Angie. And it means everything."]},
+    ],
+    phases:[
+      {hpThreshold:1.0,pattern:'slam',speed:1.3,shootRate:110,desc:'RAGE — avoid the slam'},
+      {hpThreshold:0.6,pattern:'rain',speed:1.8,shootRate:70,desc:'GRIEF — memory-rain attack'},
+      {hpThreshold:0.3,pattern:'nova',speed:2.3,shootRate:45,desc:'HIS TRUE SELF — nova burst'},
+    ],
+  },
+  objs:[
+    {t:'gem',x:7,y:8},{t:'gem',x:13,y:6},{t:'gem',x:19,y:10},{t:'gem',x:25,y:8},{t:'gem',x:31,y:6},{t:'gem',x:15,y:18},{t:'gem',x:27,y:17},
+    {t:'crystal',x:9,y:14},{t:'crystal',x:17,y:5},{t:'crystal',x:23,y:16},{t:'crystal',x:31,y:12},
+    {t:'tree',x:2,y:2},{t:'tree',x:38,y:2},{t:'tree',x:2,y:23},{t:'tree',x:38,y:23},
+    {t:'rock',x:11,y:4},{t:'rock',x:21,y:6},{t:'rock',x:33,y:8},{t:'rock',x:9,y:20},{t:'rock',x:29,y:20},
+    {t:'thorns',x:14,y:13},{t:'thorns',x:15,y:13},{t:'thorns',x:24,y:11},{t:'thorns',x:25,y:11},
+    {t:'sign',x:6,y:13,msg:'"Here stood Eryndal, first guardian. His care kept the valley alive."'},
+    {t:'portal',x:38,y:13},
+  ]
+}
+];
+
+// ─── RENDERING PRIMITIVES ───────────────────────────────────────────────────
+function px(x){return Math.floor(x)}
+function py(y){return Math.floor(y)}
+
+function drawAngie(x,y,dir,frame,hitFlash,blocking){
+  ctx.save();
+  ctx.translate(px(x),py(y));
+  if(dir==='left') ctx.scale(-1,1);
+  if(hitFlash>0&&Math.floor(hitFlash/3)%2) ctx.globalAlpha=0.45;
+  const bob=(frame===1||frame===3)?-1:0;
+  const leg=frame===1?2:frame===3?-2:0;
+  const arm=frame===1?-2:frame===3?2:0;
+  const cx=-15,cy=-42;
+
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,.35)';
+  ctx.beginPath();ctx.ellipse(0,0,13,4,0,0,Math.PI*2);ctx.fill();
+  // boots
+  ctx.fillStyle='#3b0764';
+  ctx.fillRect(cx+6+leg,cy+34,6,7);ctx.fillRect(cx+17-leg,cy+34,6,7);
+  ctx.fillStyle='#1e1b4b';
+  ctx.fillRect(cx+6+leg,cy+39,6,2);ctx.fillRect(cx+17-leg,cy+39,6,2);
+  // dress
+  ctx.fillStyle='#6d28d9';ctx.fillRect(cx+4,cy+17+bob,22,18);
+  ctx.fillStyle='#f472b6';ctx.fillRect(cx+6,cy+18+bob,18,3);
+  // arms
+  ctx.fillStyle='#fde68a';
+  ctx.fillRect(cx+5,cy+19+bob+arm,3,11);ctx.fillRect(cx+21,cy+19+bob-arm,3,11);
+  ctx.fillStyle='#6d28d9';
+  ctx.fillRect(cx+2,cy+18+bob+arm,3,10);ctx.fillRect(cx+24,cy+18+bob-arm,3,10);
+  // shield effect
+  if(blocking){
+    ctx.fillStyle='rgba(96,165,250,0.45)';
+    ctx.beginPath();ctx.arc(cx+26,cy+22,12,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#93c5fd';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx+26,cy+22,12,0,Math.PI*2);ctx.stroke();
+  }
+  // head
+  ctx.fillStyle='#fde68a';ctx.fillRect(cx+7,cy+5+bob,16,15);
+  ctx.fillStyle='#f59e0b';ctx.fillRect(cx+7,cy+4+bob,16,2);
+  ctx.fillStyle='#78350f';
+  ctx.fillRect(cx+5,cy+2+bob,20,6);
+  ctx.fillRect(cx+4,cy+5+bob,3,8);ctx.fillRect(cx+23,cy+5+bob,3,8);
+  if(dir!=='up'){
+    ctx.fillStyle='#1e1b4b';
+    ctx.fillRect(cx+9,cy+11+bob,2,2);ctx.fillRect(cx+18,cy+11+bob,2,2);
+    ctx.fillStyle='#fff';
+    ctx.fillRect(cx+10,cy+11+bob,1,1);ctx.fillRect(cx+19,cy+11+bob,1,1);
+    ctx.fillStyle='#ec4899';ctx.fillRect(cx+12,cy+15+bob,6,1);
+    ctx.fillStyle='#fda4af';ctx.fillRect(cx+6,cy+13+bob,2,2);ctx.fillRect(cx+22,cy+13+bob,2,2);
+  }
+  ctx.globalAlpha=1;
+  ctx.restore();
+}
+
+function drawKevin(x,y,frame){
+  ctx.save();ctx.translate(px(x),py(y));
+  const bob=(frame===1||frame===3)?-1:0;
+  const cx=-15,cy=-42;
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,0,13,4,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1e3a8a';ctx.fillRect(cx+6,cy+34,6,7);ctx.fillRect(cx+17,cy+34,6,7);
+  ctx.fillStyle='#0c1a3d';ctx.fillRect(cx+6,cy+39,6,2);ctx.fillRect(cx+17,cy+39,6,2);
+  ctx.fillStyle='#2563eb';ctx.fillRect(cx+4,cy+17+bob,22,18);
+  ctx.fillStyle='#dc2626';ctx.fillRect(cx+3,cy+20+bob,24,3);ctx.fillRect(cx+27,cy+20+bob,3,7);
+  ctx.fillStyle='#fde68a';ctx.fillRect(cx+5,cy+19+bob,3,11);ctx.fillRect(cx+21,cy+19+bob,3,11);
+  ctx.fillStyle='#2563eb';ctx.fillRect(cx+2,cy+18+bob,3,10);ctx.fillRect(cx+24,cy+18+bob,3,10);
+  ctx.fillStyle='#fde68a';ctx.fillRect(cx+7,cy+5+bob,16,15);
+  ctx.fillStyle='#78350f';ctx.fillRect(cx+6,cy+3+bob,18,6);ctx.fillRect(cx+5,cy+5+bob,2,5);ctx.fillRect(cx+23,cy+5+bob,2,5);
+  ctx.fillStyle='#1e1b4b';ctx.fillRect(cx+9,cy+11+bob,2,2);ctx.fillRect(cx+17,cy+11+bob,2,2);
+  ctx.fillStyle='#fff';ctx.fillRect(cx+10,cy+11+bob,1,1);ctx.fillRect(cx+18,cy+11+bob,1,1);
+  ctx.fillStyle='#fbbf24';ctx.fillRect(cx+12,cy+15+bob,6,1);
+  ctx.restore();
+}
+
+function drawNPC(npc,frame){
+  const x=npc.x*T+T/2, y=npc.y*T+T/2;
+  if(npc.isKevin){drawKevin(x,y,frame);return}
+  ctx.save();ctx.translate(px(x),py(y));
+  const bob=Math.sin(frame*0.08+x*0.01)*.5;
+  const cx=-15,cy=-42;
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(0,0,12,3,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#3b0764';ctx.fillRect(cx+6,cy+34,6,7);ctx.fillRect(cx+17,cy+34,6,7);
+  ctx.fillStyle='#1e1b4b';ctx.fillRect(cx+6,cy+39,6,2);ctx.fillRect(cx+17,cy+39,6,2);
+  ctx.fillStyle=npc.color;ctx.fillRect(cx+4,cy+17+bob,22,18);
+  ctx.fillStyle=npc.skin||'#fde68a';ctx.fillRect(cx+5,cy+19+bob,3,10);ctx.fillRect(cx+21,cy+19+bob,3,10);
+  ctx.fillStyle=npc.color;ctx.fillRect(cx+2,cy+18+bob,3,9);ctx.fillRect(cx+24,cy+18+bob,3,9);
+  ctx.fillStyle=npc.skin||'#fde68a';ctx.fillRect(cx+7,cy+5+bob,16,15);
+  ctx.fillStyle=npc.hair;ctx.fillRect(cx+5,cy+2+bob,20,6);ctx.fillRect(cx+4,cy+5+bob,3,8);ctx.fillRect(cx+23,cy+5+bob,3,8);
+  ctx.fillStyle='#1e1b4b';ctx.fillRect(cx+9,cy+11+bob,2,2);ctx.fillRect(cx+17,cy+11+bob,2,2);
+  ctx.fillStyle='#fff';ctx.fillRect(cx+10,cy+11+bob,1,1);ctx.fillRect(cx+18,cy+11+bob,1,1);
+  if(!npc.talked){
+    const bi=Math.sin(frame*.14)*3;
+    ctx.fillStyle='rgba(0,0,0,.6)';ctx.beginPath();ctx.arc(0,cy-8+bi,9,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fcd34d';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('!',0,cy-7+bi);
+  }
+  ctx.restore();
+}
+
+function drawBoss(boss,tick){
+  if(!boss||boss.defeated) return;
+  const x=px(boss.px),y=px(boss.py);
+  const pulse=Math.sin(tick*.06)*.5+.5;
+  const hp=boss.hp/boss.maxHp;
+  const flash=boss.hitFlash>0&&Math.floor(boss.hitFlash/2)%2;
+
+  ctx.save();ctx.translate(x,y);
+  if(flash){ctx.globalAlpha=0.5}
+
+  // glow
+  ctx.fillStyle=`rgba(${boss.glowR||200},${boss.glowG||50},${boss.glowB||255},${0.15+0.1*pulse})`;
+  ctx.beginPath();ctx.arc(0,-30,boss.size+12+pulse*4,0,Math.PI*2);ctx.fill();
+
+  const S=boss.size;
+  const phase=boss.currentPhase;
+
+  if(boss.id==='root_warden'){
+    // Body — gnarly root mass
+    ctx.fillStyle=flash?'#86efac':'#1a4a0a';
+    ctx.beginPath();ctx.arc(0,-S/2,S,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=flash?'#bbf7d0':'#15803d';
+    ctx.beginPath();ctx.arc(-8,-S/2-8,S*.7,0,Math.PI*2);ctx.fill();
+    // Root arms
+    for(let i=0;i<(phase>=2?6:4);i++){
+      const a=(i/(phase>=2?6:4))*Math.PI*2+tick*.02;
+      const len=S*.8+(pulse*8);
+      ctx.strokeStyle=flash?'#86efac':'#166534';
+      ctx.lineWidth=5-i*.3;
+      ctx.beginPath();
+      ctx.moveTo(0,-S/2);
+      ctx.quadraticCurveTo(Math.cos(a+.3)*len*.6,Math.sin(a+.3)*len*.6-S/2,Math.cos(a)*len,Math.sin(a)*len-S/2);
+      ctx.stroke();
+    }
+    // Eye-wounds
+    const eyeCol=phase>=3?'#ff0000':phase>=2?'#fbbf24':'#4ade80';
+    ctx.fillStyle=eyeCol;
+    ctx.beginPath();ctx.ellipse(-S*.3,-S/2-5,6,4,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(S*.3,-S/2-5,6,4,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#000';
+    ctx.beginPath();ctx.arc(-S*.3,-S/2-5,2,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(S*.3,-S/2-5,2,0,Math.PI*2);ctx.fill();
+  } else if(boss.id==='grey_tide'){
+    // Water form
+    ctx.fillStyle=flash?'#e0f2fe':`rgba(14,165,233,${.7+.2*pulse})`;
+    for(let i=0;i<3;i++){
+      const a=tick*.03+i*Math.PI*.66;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a)*6,Math.sin(a)*6-S*.4,S*.7+i*4,0,Math.PI*2);
+      ctx.fill();
+    }
+    // Face
+    ctx.fillStyle=flash?'#fff':'rgba(186,230,253,.9)';
+    ctx.beginPath();ctx.arc(0,-S*.55,S*.35,0,Math.PI*2);ctx.fill();
+    // Eyes
+    const eC=phase>=3?'#f87171':phase>=2?'#60a5fa':'#0c4a6e';
+    ctx.fillStyle=eC;ctx.beginPath();ctx.arc(-S*.15,-S*.6,5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(S*.15,-S*.6,5,0,Math.PI*2);ctx.fill();
+    // Tears
+    if(hp<.5){
+      ctx.fillStyle='rgba(14,165,233,.8)';
+      ctx.fillRect(-S*.15-1,-S*.5,3,8+pulse*3);
+      ctx.fillRect(S*.15-1,-S*.5,3,8+pulse*3);
+    }
+    // Hair / veil
+    ctx.fillStyle=`rgba(7,89,133,${.7+.2*pulse})`;
+    for(let i=0;i<5;i++){
+      const hx=(-S*.4)+(i*S*.2);
+      const hy=-S*.8+Math.sin(tick*.04+i)*4;
+      ctx.fillRect(hx-2,hy,4,S*.3+pulse*4);
+    }
+  } else if(boss.id==='hollow_king'){
+    // Massive ancient figure
+    const bodyH=S*1.6;
+    ctx.fillStyle=flash?'#c4b5fd':phase>=3?'#7c3aed':phase>=2?'#4c1d95':'#1e0a3f';
+    // robe body
+    ctx.fillRect(-S*.7,-bodyH,S*1.4,bodyH);
+    // shoulders
+    ctx.fillRect(-S*.9,-bodyH*.7,S*.25,S*.4);
+    ctx.fillRect(S*.65,-bodyH*.7,S*.25,S*.4);
+    // head
+    ctx.fillStyle=flash?'#e9d5ff':phase>=3?'#a78bfa':'#1e1b4b';
+    ctx.beginPath();ctx.arc(0,-bodyH-S*.3,S*.4,0,Math.PI*2);ctx.fill();
+    // crown
+    for(let i=0;i<(phase>=2?7:5);i++){
+      const a=(i/(phase>=2?7:5))*Math.PI*2;
+      const cr=S*.4;
+      ctx.fillStyle=phase>=3?'#fcd34d':'#6d28d9';
+      ctx.fillRect(Math.cos(a)*cr-2,-bodyH-S*.7+Math.sin(a)*cr*.3,4,S*.2+pulse*3);
+    }
+    // eyes
+    const eyeC=phase>=3?'#fcd34d':phase>=2?'#ef4444':'#818cf8';
+    ctx.fillStyle=eyeC;
+    ctx.beginPath();ctx.arc(-S*.2,-bodyH-S*.35,8+pulse*2,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(S*.2,-bodyH-S*.35,8+pulse*2,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#000';
+    ctx.beginPath();ctx.arc(-S*.2,-bodyH-S*.35,4,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(S*.2,-bodyH-S*.35,4,0,Math.PI*2);ctx.fill();
+    // aura tendrils
+    for(let i=0;i<8;i++){
+      const a=tick*.015+i*Math.PI*.25;
+      const len=S*.6+pulse*10;
+      ctx.strokeStyle=`rgba(${phase>=3?'252,211,77':phase>=2?'239,68,68':'167,139,250'},.4)`;
+      ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(0,-bodyH*.5);
+      ctx.lineTo(Math.cos(a)*len,-bodyH*.5+Math.sin(a)*len*.5);ctx.stroke();
+    }
+  }
+
+  // health bar above boss
+  const bw=boss.size*2.2;
+  ctx.fillStyle='rgba(0,0,0,.7)';
+  ctx.fillRect(-bw/2,-S*2.2-8,bw,8);
+  const hpC=hp>.6?'#22c55e':hp>.3?'#f59e0b':'#ef4444';
+  ctx.fillStyle=hpC;ctx.fillRect(-bw/2,-S*2.2-8,bw*hp,8);
+  ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=1;
+  ctx.strokeRect(-bw/2,-S*2.2-8,bw,8);
+
+  ctx.restore();
+}
+
+function drawProjectile(p){
+  ctx.save();ctx.translate(px(p.x),py(p.y));
+  if(p.type==='root'){
+    ctx.strokeStyle='#4ade80';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(-8,0);ctx.lineTo(8,0);ctx.stroke();
+    ctx.fillStyle='#166534';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
+  } else if(p.type==='wave'){
+    ctx.fillStyle='rgba(14,165,233,.8)';
+    ctx.beginPath();ctx.arc(0,0,p.r||6,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#7dd3fc';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(0,0,p.r||6,0,Math.PI*2);ctx.stroke();
+  } else if(p.type==='slam'){
+    ctx.fillStyle='rgba(109,40,217,.7)';
+    ctx.beginPath();ctx.arc(0,0,p.r||7,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#c4b5fd';ctx.lineWidth=1.5;
+    ctx.strokeRect(-p.r/2||4,-p.r/2||4,p.r||8,p.r||8);
+  } else if(p.type==='star'){
+    ctx.fillStyle='#fcd34d';
+    for(let i=0;i<5;i++){
+      const a=i*Math.PI*.4-Math.PI/2;
+      const ai=a+Math.PI*.4;
+      if(i===0)ctx.beginPath();
+      ctx.lineTo(Math.cos(a)*7,Math.sin(a)*7);
+      ctx.lineTo(Math.cos(ai)*3,Math.sin(ai)*3);
+    }
+    ctx.closePath();ctx.fill();
+  } else {
+    ctx.fillStyle='#f87171';ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawTile(t,wx,wy,tick){
+  if(t==='tree'){
+    const s=Math.sin(tick*.015+wx*.1)*1.5;
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(wx,wy,16,4,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#451a03';ctx.fillRect(wx-4,wy-22,8,22);
+    ctx.fillStyle='#78350f';ctx.fillRect(wx-3,wy-22,2,22);
+    ctx.save();ctx.translate(s,0);
+    ctx.fillStyle='#14532d';ctx.beginPath();ctx.arc(wx,wy-36,18,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#166534';ctx.beginPath();ctx.arc(wx-6,wy-40,10,0,Math.PI*2);ctx.arc(wx+6,wy-38,11,0,Math.PI*2);ctx.arc(wx,wy-44,10,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  } else if(t==='rock'){
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(wx,wy,14,3,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#44403c';ctx.beginPath();ctx.moveTo(wx-13,wy-2);ctx.lineTo(wx-10,wy-15);ctx.lineTo(wx-2,wy-18);ctx.lineTo(wx+8,wy-16);ctx.lineTo(wx+13,wy-8);ctx.lineTo(wx+11,wy-2);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#57534e';ctx.beginPath();ctx.moveTo(wx-10,wy-3);ctx.lineTo(wx-7,wy-14);ctx.lineTo(wx-1,wy-16);ctx.lineTo(wx+4,wy-14);ctx.lineTo(wx+6,wy-10);ctx.closePath();ctx.fill();
+  } else if(t==='dead'){
+    ctx.fillStyle='#422006';ctx.fillRect(wx-3,wy-14,6,14);
+    ctx.strokeStyle='#78350f';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(wx,wy-14);ctx.lineTo(wx-10,wy-22);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(wx,wy-10);ctx.lineTo(wx+8,wy-18);ctx.stroke();
+  } else if(t==='mushroom'){
+    const g=.5+Math.sin(tick*.05+wx*.1)*.3;
+    ctx.fillStyle='#fef3c7';ctx.fillRect(wx-3,wy-10,6,10);
+    ctx.fillStyle=`rgba(167,139,250,${g})`;ctx.fillRect(wx-3,wy-10,6,4);
+    ctx.fillStyle='#a78bfa';ctx.beginPath();ctx.arc(wx,wy-14,8,0,Math.PI,true);ctx.fill();
+  } else if(t==='crystal'){
+    const g=.5+Math.sin(tick*.06+wx*.1)*.3;
+    ctx.fillStyle=`rgba(167,139,250,${g*.4})`;ctx.beginPath();ctx.arc(wx,wy-14,14,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#8b5cf6';ctx.beginPath();ctx.moveTo(wx,wy-22);ctx.lineTo(wx+5,wy-6);ctx.lineTo(wx-5,wy-6);ctx.closePath();ctx.fill();
+  } else if(t==='thorns'){
+    ctx.fillStyle='#7f1d1d';
+    for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(wx-12+i*6,wy-2);ctx.lineTo(wx-10+i*6,wy-10);ctx.lineTo(wx-8+i*6,wy-2);ctx.closePath();ctx.fill();}
+  } else if(t==='sign'){
+    ctx.fillStyle='#78350f';ctx.fillRect(wx-2,wy-12,4,14);
+    ctx.fillStyle='#92400e';ctx.fillRect(wx-10,wy-22,20,12);
+    ctx.fillStyle='#fde68a';ctx.fillRect(wx-7,wy-18,4,1);ctx.fillRect(wx-7,wy-15,10,1);
+  } else if(t==='water'){
+    const w=Math.sin(tick*.08+wx*.5)*1;
+    ctx.fillStyle='#1a4a7a';ctx.fillRect(wx-T/2,wy-T/2,T,T);
+    ctx.fillStyle='rgba(100,180,255,.2)';ctx.fillRect(wx-T/2,wy-4+w,T,3);
+  } else if(t==='stall'){
+    ctx.fillStyle='#78350f';ctx.fillRect(wx-14,wy-8,28,8);
+    ctx.fillStyle='#92400e';ctx.fillRect(wx-12,wy-18,24,12);
+    ctx.fillStyle='#fcd34d';ctx.fillRect(wx-4,wy-14,8,6);
+  } else if(t==='gem'){
+    const b=Math.sin(tick*.08+wx+wy)*2;
+    const gl=.6+Math.sin(tick*.1+wx+wy)*.4;
+    ctx.fillStyle=`rgba(251,191,36,${gl*.3})`;ctx.beginPath();ctx.arc(wx,wy-14+b,16,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fcd34d';
+    ctx.beginPath();ctx.moveTo(wx,wy-22+b);ctx.lineTo(wx+6,wy-16+b);ctx.lineTo(wx+4,wy-8+b);ctx.lineTo(wx-4,wy-8+b);ctx.lineTo(wx-6,wy-16+b);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#fef3c7';ctx.beginPath();ctx.moveTo(wx,wy-22+b);ctx.lineTo(wx-2,wy-16+b);ctx.lineTo(wx-2,wy-12+b);ctx.closePath();ctx.fill();
+  } else if(t==='portal'){
+    const pf=Math.sin(tick*.06);
+    const r=26+pf*3;
+    const LD=LEVELS[G.level-1];
+    const active=G.gems>=LD.gemsNeeded;
+    ctx.fillStyle=active?`rgba(129,140,248,${.3+.2*pf})`:'rgba(100,100,120,.2)';
+    for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(wx,wy-r/2,r-i*6,r/2-i*3,0,0,Math.PI*2);ctx.fill();}
+    ctx.strokeStyle=active?'#c7d2fe':'#475569';ctx.lineWidth=2;
+    if(!active){ctx.setLineDash([4,4]);}
+    ctx.beginPath();ctx.ellipse(wx,wy-r/2,r,r/2,0,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+    if(!active){
+      ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='center';
+      ctx.fillText('LOCKED',wx,wy-r/2+3);
+    }
+    if(active){
+      for(let i=0;i<8;i++){
+        const a=tick*.03+i*Math.PI/4;
+        ctx.fillStyle='#fcd34d';ctx.fillRect(wx+Math.cos(a)*r-1,wy-r/2+Math.sin(a)*r/2-1,2,2);
+      }
+    }
+  }
+}
+
+// ─── COLLISION ──────────────────────────────────────────────────────────────
+function collide(x,y){
+  const L=LEVELS[G.level-1];
+  if(x<18||y<36||x>L.size.w*T-18||y>L.size.h*T-18) return true;
+  for(const o of G.objs){
+    if(o.collected||o.defeated) continue;
+    const ox=o.x*T+T/2, oy=o.y*T+T/2;
+    if(o.t==='tree'&&(x-ox)**2+(y-oy+8)**2<15**2) return true;
+    if(o.t==='rock'&&Math.abs(x-ox)<13&&Math.abs(y-oy)<9) return true;
+    if(o.t==='stall'&&Math.abs(x-ox)<14&&Math.abs(y-oy)<8) return true;
+    if(o.t==='sign'&&Math.abs(x-ox)<10&&Math.abs(y-oy)<7) return true;
+  }
+  return false;
+}
+
+function touchThorns(x,y){
+  for(const o of G.objs){
+    if(o.t!=='thorns'||o.defeated) continue;
+    const ox=o.x*T+T/2,oy=o.y*T+T/2;
+    if(Math.abs(x-ox)<15&&Math.abs(y-oy)<11) return true;
+  }
+  return false;
+}
+
+function touchWater(x,y){
+  for(const o of G.objs){
+    if(o.t!=='water') continue;
+    const ox=o.x*T+T/2,oy=o.y*T+T/2;
+    if(Math.abs(x-ox)<T/2&&Math.abs(y-oy)<T/2) return true;
+  }
+  return false;
+}
+
+// ─── MOVE ───────────────────────────────────────────────────────────────────
+function movePlayer(dx,dy){
+  const P=G.P;
+  const spd=3.6;
+  const nx=P.x+dx*spd, ny=P.y+dy*spd;
+  if(!collide(nx,P.y)) P.x=nx;
+  if(!collide(P.x,ny)) P.y=ny;
+  if(dx||dy){
+    P.moving=true;
+    if(Math.abs(dx)>Math.abs(dy)) P.dir=dx>0?'right':'left';
+    else if(dy) P.dir=dy>0?'down':'up';
+    P.wt++;if(P.wt>=7){P.wt=0;P.wf=(P.wf+1)%4;}
+    P.idle=0;
+  } else {
+    P.moving=false;P.wf=0;P.idle=(P.idle||0)+1;
+  }
+}
+
+// ─── UI HELPERS ─────────────────────────────────────────────────────────────
+let toastTimeout=null;
+function toast(msg,dur){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.style.display='block';
+  clearTimeout(toastTimeout);
+  G.toastT=dur||140;
+  toastTimeout=setTimeout(()=>el.style.display='none',dur?dur*16:2400);
+}
+
+function showOverlay(html){
+  document.getElementById('scr').innerHTML=html;
+  document.getElementById('overlay').style.display='flex';
+}
+function hideOverlay(){document.getElementById('overlay').style.display='none';}
+
+function updateHUD(){
+  document.getElementById('hlvl').textContent=G.level;
+  document.getElementById('hgems').textContent=G.gems+'/'+G.gemsNeeded;
+  document.getElementById('hstars').textContent=G.stars;
+  document.getElementById('hquest').textContent=G.questText;
+  // hearts
+  const h=document.getElementById('hearts');
+  h.innerHTML='';
+  for(let i=0;i<G.maxHp;i++){
+    const hrt=document.createElement('span');
+    hrt.style.cssText='font-size:14px;line-height:1;margin-right:2px';
+    hrt.textContent=i<G.hp?'♥':'♡';
+    hrt.style.color=i<G.hp?'#f9a8d4':'#444';
+    h.appendChild(hrt);
+  }
+  // boss bar
+  if(G.boss&&!G.boss.defeated){
+    const bb=document.getElementById('bossbar');
+    bb.style.display='block';
+    document.getElementById('bossname').textContent=G.boss.name;
+    const pct=Math.max(0,G.boss.hp/G.boss.maxHp)*100;
+    document.getElementById('bossbar-fill').style.width=pct+'%';
+    // phase segment marker at 60% and 30% — render once via CSS on the track
+    const track=document.getElementById('bosstrack');
+    if(!track._segsAdded){
+      track._segsAdded=true;
+      ['60%','30%'].forEach(left=>{
+        const s=document.createElement('div');
+        s.style.cssText='position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.3);left:'+left;
+        track.appendChild(s);
+      });
+    }
+    const phTxt=G.boss.phases[G.boss.currentPhase-1];
+    document.getElementById('bossbar-phase').textContent=phTxt?phTxt.desc:'';
+  } else {
+    document.getElementById('bossbar').style.display='none';
+  }
+  // shield badge
+  const shBadge=document.getElementById('badge-shield');
+  shBadge.textContent=G.shieldCharge;
+  shBadge.style.display=G.shieldCharge>0?'block':'none';
+  // staff badge
+  document.getElementById('badge-crystal').style.display=G.hasStaff?'none':'block';
+}
+
+function setQuest(q){G.questText=q;updateHUD();}
+
+// ─── DIALOG SYSTEM ──────────────────────────────────────────────────────────
+function openNpcDialog(npc){
+  G.dialog={npc,idx:0};
+  G.phase='dialog';
+  renderDialog();
+}
+
+function renderDialog(){
+  if(!G.dialog) return;
+  const {npc,idx}=G.dialog;
+  const line=npc.dialog[idx];
+  const dlg=document.getElementById('dlgbox');
+  dlg.style.display='block';
+  document.getElementById('dlg-who').textContent=npc.name;
+  document.getElementById('dlg-text').textContent=line.a;
+  // draw face
+  const fc=document.getElementById('dlg-face').getContext('2d');
+  fc.imageSmoothingEnabled=false;
+  fc.clearRect(0,0,32,32);
+  fc.fillStyle=npc.hair||'#78350f';fc.fillRect(6,2,20,6);
+  fc.fillStyle=npc.skin||'#fde68a';fc.fillRect(8,8,16,12);
+  fc.fillStyle='#1e1b4b';fc.fillRect(11,13,2,2);fc.fillRect(19,13,2,2);
+  fc.fillStyle=npc.color;fc.fillRect(5,20,22,12);
+  npc.talked=true;
+  // build options
+  const opts=document.getElementById('dlg-opts');
+  opts.innerHTML='';
+  const followUps=npc.dialog.filter((d,i)=>i>idx&&d.q).slice(0,3);
+  followUps.forEach(opt=>{
+    const b=document.createElement('button');
+    b.className='dopt';b.textContent=opt.q;
+    const ni=npc.dialog.indexOf(opt);
+    b.onclick=()=>{
+      if(opt.clue&&!G.clues.includes(opt.clue)) G.clues.push(opt.clue);
+      if(opt.gives==='shield'){G.shieldCharge=Math.min(3,G.shieldCharge+3);toast('★ +3 Shield charges received!');save();}
+      G.dialog.idx=ni;renderDialog();
+    };
+    opts.appendChild(b);
+  });
+  const close=document.createElement('button');
+  close.className='dopt';close.textContent='[Close]';
+  close.onclick=closeDialog;
+  opts.appendChild(close);
+}
+
+function closeDialog(){
+  G.dialog=null;
+  document.getElementById('dlgbox').style.display='none';
+  if(G.phase==='dialog') G.phase='play';
+}
+
+// ─── CUTSCENE CHAIN ─────────────────────────────────────────────────────────
+function runCutscene(chain,onDone){
+  let ci=0,li=0;
+  G.phase='cutscene';
+  function show(){
+    const ch=chain[ci];
+    const line=ch.lines[li];
+    document.getElementById('dlgbox').style.display='block';
+    document.getElementById('dlg-who').textContent=ch.speaker;
+    document.getElementById('dlg-who').style.color=ch.color||'#fcd34d';
+    document.getElementById('dlg-text').textContent=line;
+    // draw face for cutscene
+    const fc=document.getElementById('dlg-face').getContext('2d');
+    fc.imageSmoothingEnabled=false;fc.clearRect(0,0,32,32);
+    if(ch.hair){fc.fillStyle=ch.hair;fc.fillRect(6,2,20,6);}
+    if(ch.skin){fc.fillStyle=ch.skin;fc.fillRect(8,8,16,12);fc.fillStyle='#1e1b4b';fc.fillRect(11,13,2,2);fc.fillRect(19,13,2,2);}
+    fc.fillStyle=ch.color||'#6d28d9';fc.fillRect(5,20,22,12);
+    const opts=document.getElementById('dlg-opts');
+    opts.innerHTML='';
+    const next=document.createElement('button');
+    next.className='dopt';next.textContent=li<ch.lines.length-1?'Continue...':'[Next]';
+    next.onclick=()=>{
+      li++;
+      if(li>=ch.lines.length){ci++;li=0;}
+      if(ci>=chain.length){closeDialog();G.phase='play';if(onDone)onDone();}
+      else show();
+    };
+    opts.appendChild(next);
+  }
+  show();
+}
+
+// ─── BOSS SYSTEM ────────────────────────────────────────────────────────────
+function spawnBoss(){
+  const L=LEVELS[G.level-1];
+  const BD=L.boss;
+  G.boss={
+    ...BD,
+    hp:BD.hp, maxHp:BD.hp,
+    px:BD.x*T+T/2, py:BD.y*T+T/2,
+    currentPhase:1,
+    hitFlash:0,
+    glowR:BD.id==='root_warden'?50:BD.id==='grey_tide'?14:109,
+    glowG:BD.id==='root_warden'?200:BD.id==='grey_tide'?165:40,
+    glowB:BD.id==='root_warden'?50:BD.id==='grey_tide'?233:217,
+    attackTimer:0,
+    moveDir:{x:0,y:0},
+    moveTimer:0,
+    stunTimer:0,
+    midFightFired:[],
+    defeated:false,
+    phase:BD.phase||1,
+  };
+  G.phase='boss';
+  G.projectiles=[];
+  setQuest('DEFEAT '+BD.name+'!');
+  updateHUD();
+  document.getElementById('bossbar').style.display='block';
+  document.getElementById('bossname').textContent=BD.name;
+
+  // pre-fight dialog
+  runCutscene(BD.preDialog,()=>{G.phase='boss';});
+}
+
+function updateBoss(){
+  const B=G.boss;
+  if(!B||B.defeated) return;
+  B.attackTimer++;
+  if(B.hitFlash>0) B.hitFlash--;
+  if(B.stunTimer>0){B.stunTimer--;return;}
+
+  const ph=B.phases[B.currentPhase-1];
+  const P=G.P;
+  const dx=P.x-B.px, dy=P.y-B.py;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+
+  // boss movement — orbit toward player
+  if(B.moveTimer<=0){
+    const ang=Math.atan2(dy,dx)+(.5-.7*Math.random())*Math.PI;
+    const spd=ph.speed*0.8;
+    B.moveDir={x:Math.cos(ang)*spd,y:Math.sin(ang)*spd};
+    B.moveTimer=40+Math.random()*40;
+  }
+  B.moveTimer--;
+  const L=LEVELS[G.level-1];
+  const nbx=B.px+B.moveDir.x, nby=B.py+B.moveDir.y;
+  if(nbx>40&&nbx<L.size.w*T-40) B.px=nbx;
+  if(nby>40&&nby<L.size.h*T-40) B.py=nby;
+
+  // attack
+  if(B.attackTimer>=ph.shootRate){
+    B.attackTimer=0;
+    fireAttack(B,ph.pattern,P);
+  }
+
+  // player contact damage
+  if(dist<B.size*0.7&&P.hf<=0){
+    if(!P.blocking){
+      G.hp--;P.hf=50;
+      flashDamage();
+      if(G.hp<=0){playerDied();return;}
+      updateHUD();
+    }
+  }
+
+  // mid fight dialog triggers
+  if(B.midFightDialog){
+    for(const mfd of B.midFightDialog){
+      const pct=B.hp/B.maxHp;
+      if(!B.midFightFired.includes(mfd.hpPct)&&pct<=mfd.hpPct){
+        B.midFightFired.push(mfd.hpPct);
+        B.stunTimer=80;
+        G.phase='cutscene';
+        const chain=mfd.lines.map(l=>({speaker:l.speaker,color:l.color||(l.speaker==='Angie'?'#6d28d9':'#2563eb'),lines:[l.line],hair:l.speaker==='Angie'?'#78350f':l.speaker==='Kevin'?'#78350f':undefined,skin:l.speaker==='Angie'?'#fde68a':l.speaker==='Kevin'?'#fde68a':undefined}));
+        runCutscene(chain,()=>{G.phase='boss';});
+      }
+    }
+  }
+
+  // phase transitions
+  const pct=B.hp/B.maxHp;
+  const newPhase=pct<=0.3?3:pct<=0.6?2:1;
+  if(newPhase>B.currentPhase){
+    B.currentPhase=newPhase;
+    B.stunTimer=30;
+    toast('⚠ '+B.phases[newPhase-1].desc.toUpperCase());
+    updateHUD();
+  }
+}
+
+function fireAttack(boss,pattern,P){
+  const dx=P.x-boss.px, dy=P.y-boss.py;
+  const ang=Math.atan2(dy,dx);
+  const spd=2.2+boss.currentPhase*.6;
+
+  if(pattern==='roots'||pattern==='wave'){
+    // 3-way spread
+    for(let s=-1;s<=1;s++){
+      const a=ang+s*.3;
+      G.projectiles.push({x:boss.px,y:boss.py,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,type:pattern==='roots'?'root':'wave',r:6,life:180,fromBoss:true});
+    }
+  } else if(pattern==='sweep'||pattern==='spiral'){
+    // rotating burst
+    const count=boss.currentPhase>=2?8:5;
+    for(let i=0;i<count;i++){
+      const a=ang+(i/count)*Math.PI*2;
+      G.projectiles.push({x:boss.px,y:boss.py,vx:Math.cos(a)*spd*.9,vy:Math.sin(a)*spd*.9,type:'wave',r:7,life:160,fromBoss:true});
+    }
+  } else if(pattern==='frenzy'||pattern==='grief'){
+    // aimed + random
+    for(let i=0;i<4;i++){
+      const ra=ang+(Math.random()-.5)*Math.PI;
+      G.projectiles.push({x:boss.px,y:boss.py,vx:Math.cos(ra)*spd*1.1,vy:Math.sin(ra)*spd*1.1,type:'wave',r:8,life:200,fromBoss:true});
+    }
+    G.projectiles.push({x:boss.px,y:boss.py,vx:Math.cos(ang)*spd*1.4,vy:Math.sin(ang)*spd*1.4,type:'wave',r:5,life:200,fromBoss:true});
+  } else if(pattern==='slam'||pattern==='rain'){
+    // slam + projectile
+    G.projectiles.push({x:boss.px,y:boss.py,vx:Math.cos(ang)*spd*1.5,vy:Math.sin(ang)*spd*1.5,type:'slam',r:9,life:140,fromBoss:true});
+    for(let i=0;i<3;i++){
+      const ra=ang+(i-1)*.4;
+      G.projectiles.push({x:boss.px,y:boss.py,vx:Math.cos(ra)*spd,vy:Math.sin(ra)*spd,type:'slam',r:6,life:160,fromBoss:true});
+    }
+  } else if(pattern==='nova'){
+    // all directions
+    const count=12;
+    for(let i=0;i<count;i++){
+      const a=(i/count)*Math.PI*2;
+      G.projectiles.push({x:boss.px,y:boss.py,vx:Math.cos(a)*spd*1.1,vy:Math.sin(a)*spd*1.1,type:'slam',r:7,life:200,fromBoss:true});
+    }
+  }
+}
+
+function hitBoss(dmg){
+  const B=G.boss;
+  if(!B||B.defeated) return;
+  B.hp=Math.max(0,B.hp-dmg);
+  B.hitFlash=12;
+  spawnParticles(B.px,B.py-30,'#fcd34d',6);
+  updateHUD();
+  if(B.hp<=0) bossDied();
+}
+
+function bossDied(){
+  const B=G.boss;
+  const L=LEVELS[G.level-1];
+  B.defeated=true;
+  G.projectiles=[];
+  document.getElementById('bossbar').style.display='none';
+  spawnParticles(B.px,B.py-40,'#fcd34d',30);
+  spawnParticles(B.px,B.py-40,'#c084fc',20);
+  G.stars+=3;save();
+  // post fight dialog
+  G.phase='cutscene';
+  runCutscene(L.boss.postDialog,()=>{
+    G.phase='play';
+    if(L.boss.loot==='staff'){
+      G.hasStaff=true;
+      document.getElementById('badge-crystal').style.display='none';
+      toast('★ Crystal Staff unlocked! Press 3 to use.',180);
+      save();
+    }
+    setQuest('Find the portal!');
+    updateHUD();
+    // unlock portal
+    const portal=G.objs.find(o=>o.t==='portal');
+    if(portal) portal.active=true;
+  });
+}
+
+function flashDamage(){
+  const el=document.getElementById('dmgflash');
+  el.style.opacity='1';
+  setTimeout(()=>el.style.opacity='0',100);
+}
+
+function playerDied(){
+  G.phase='over';
+  setTimeout(()=>{
+    showOverlay(`
+      <h2>Angie fell...</h2>
+      <p>The valley still needs her. Rest, and try again.</p>
+      <div class="hearts" style="font-size:22px">♡♡♡♡♡</div>
+      <div class="ml">
+        <button onclick="retryLevel()">Try Again</button>
+        <button class="sec" onclick="openMenu()">Menu</button>
+      </div>
+    `);
+  },400);
+}
+
+// ─── PARTICLES ──────────────────────────────────────────────────────────────
+function spawnParticles(x,y,color,n){
+  for(let i=0;i<n;i++){
+    G.particles.push({x,y,vx:(Math.random()-.5)*5,vy:-Math.random()*4-1,life:40,maxLife:40,color});
+  }
+}
+
+// ─── INTERACTION ────────────────────────────────────────────────────────────
+function doTalk(){
+  if(G.phase==='dialog'){closeDialog();return}
+  if(G.phase!=='play') return;
+  const P=G.P;
+  // nearest NPC
+  let best=null,bestD=62**2;
+  for(const n of G.npcs){
+    const nx=n.x*T+T/2,ny=n.y*T+T/2;
+    const d=(P.x-nx)**2+(P.y-ny)**2;
+    if(d<bestD){bestD=d;best=n;}
+  }
+  if(best){openNpcDialog(best);return}
+  // sign
+  for(const o of G.objs){
+    if(o.t!=='sign') continue;
+    const ox=o.x*T+T/2,oy=o.y*T+T/2;
+    if(Math.abs(P.x-ox)<48&&Math.abs(P.y-oy)<48){
+      G.dialog={sign:true};
+      G.phase='dialog';
+      document.getElementById('dlgbox').style.display='block';
+      document.getElementById('dlg-who').textContent='Sign';
+      document.getElementById('dlg-who').style.color='#fcd34d';
+      document.getElementById('dlg-text').textContent=o.msg;
+      document.getElementById('dlg-face').getContext('2d').clearRect(0,0,32,32);
+      const opts=document.getElementById('dlg-opts');
+      opts.innerHTML='<button class="dopt" onclick="closeDialog()">[Close]</button>';
+      return;
+    }
+  }
+  toast('Nobody nearby...');
+}
+
+window.closeDialog=closeDialog;
+
+function doAct(){
+  if(G.phase==='dialog'){closeDialog();return}
+  if(G.phase!=='play'&&G.phase!=='boss') return;
+  const P=G.P;
+
+  if(G.tool==='shield'){
+    if(G.shieldCharge>0){
+      P.blocking=true;P.blockTimer=120;G.shieldCharge--;
+      toast('Shield activated! Blocking for 2 seconds.');
+      updateHUD();
+    } else {
+      toast('No shield charges! Talk to NPCs to find more.');
+    }
+  } else if(G.tool==='crystal'){
+    if(!G.hasStaff){toast('You don\'t have the Crystal Staff yet. Defeat the Root Warden!');return;}
+    // fire star bolt toward boss
+    if(G.boss&&!G.boss.defeated){
+      const B=G.boss;
+      const dx=B.px-P.x,dy=B.py-P.y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      const spd=6;
+      G.projectiles.push({x:P.x,y:P.y,vx:dx/d*spd,vy:dy/d*spd,type:'star',life:120,fromBoss:false,dmg:12});
+      P.sw=12;
+      spawnParticles(P.x,P.y-20,'#a78bfa',5);
+    } else if(G.phase==='play'){
+      // in non-boss: heal slightly
+      const p=G.P;
+      p.sw=12;
+      spawnParticles(p.x,p.y-20,'#a78bfa',8);
+      toast('Crystal staff pulses...');
+    }
+  } else if(G.tool==='journal'){
+    const clueTxt=G.clues.length?G.clues.map(c=>'<p class="clue">• '+c+'</p>').join(''):'<p>No clues yet — talk to everyone!</p>';
+    showOverlay(`
+      <h2>Angie's Journal</h2>
+      <div class="story">
+        <b>Chapter 2, Level ${G.level}: ${LEVELS[G.level-1].name}</b><br>
+        Gems: ${G.gems}/${G.gemsNeeded} · Stars: ${G.stars} · HP: ${G.hp}/${G.maxHp}
+      </div>
+      <div class="story">${clueTxt}</div>
+      <div class="ml">
+        <button onclick="resumeGame()">Close</button>
+      </div>
+    `);
+  } else {
+    // hand — try to interact with nearest NPC or sign
+    doTalk();
+  }
+}
+
+window.hideOverlay=hideOverlay;
+
+// ─── GEM / PORTAL CHECKS ────────────────────────────────────────────────────
+function checkPickups(){
+  if(G.phase!=='play'&&G.phase!=='boss') return;
+  const P=G.P;
+  const L=LEVELS[G.level-1];
+
+  for(const o of G.objs){
+    if(o.collected) continue;
+    const ox=o.x*T+T/2, oy=o.y*T+T/2;
+    if(o.t==='gem'&&(P.x-ox)**2+(P.y-oy)**2<26**2){
+      o.collected=true;G.gems++;
+      spawnParticles(ox,oy-14,'#fcd34d',12);
+      toast('✦ Star-gem ('+(G.gems)+'/'+G.gemsNeeded+')');
+      if(G.gems>=L.gemsNeeded&&!G.boss&&!G.bossIntroShown){
+        G.bossIntroShown=true;
+        setQuest('Boss awakening...');
+        setTimeout(spawnBoss,800);
+      } else if(G.gems<L.gemsNeeded){
+        setQuest('Find gems: '+G.gems+'/'+G.gemsNeeded);
+      }
+      save();updateHUD();
+    }
+  }
+
+  // portal — only after boss defeated
+  const portal=G.objs.find(o=>o.t==='portal');
+  if(portal&&G.boss&&G.boss.defeated){
+    const ox=portal.x*T+T/2,oy=portal.y*T+T/2;
+    if((P.x-ox)**2+(P.y-oy)**2<30**2){
+      if(G.level<3) levelComplete();
+      else gameComplete();
+    }
+  }
+}
+
+// ─── PROJECTILE UPDATE ──────────────────────────────────────────────────────
+function updateProjectiles(){
+  const P=G.P;
+  G.projectiles=G.projectiles.filter(p=>{
+    p.x+=p.vx;p.y+=p.vy;p.life--;
+    if(p.life<=0) return false;
+    if(p.fromBoss){
+      if((P.x-p.x)**2+(P.y-p.y)**2<(p.r+12)**2){
+        if(P.blocking){
+          // deflect
+          spawnParticles(p.x,p.y,'#60a5fa',5);
+          return false;
+        }
+        if(P.hf<=0){
+          G.hp--;P.hf=50;flashDamage();
+          if(G.hp<=0){playerDied();return false;}
+          updateHUD();
+        }
+        return false;
+      }
+    } else {
+      // player bullet
+      if(G.boss&&!G.boss.defeated){
+        const B=G.boss;
+        if((B.px-p.x)**2+(B.py-p.y-B.size/2)**2<(B.size*.7)**2){
+          hitBoss(p.dmg||12);
+          spawnParticles(p.x,p.y,'#fcd34d',5);
+          return false;
+        }
+      }
+    }
+    return true;
+  });
+}
+
+// ─── LEVEL FLOW ─────────────────────────────────────────────────────────────
+function loadLevel(n){
+  G.level=n;
+  const L=LEVELS[n-1];
+  G.gemsNeeded=L.gemsNeeded;
+  G.gems=0;
+  G.boss=null;
+  G.bossIntroShown=false;
+  G.projectiles=[];
+  G.particles=[];
+  G.objs=L.objs.map(o=>({...o,collected:false,defeated:false}));
+  G.npcs=L.npcs.map(n=>({...n,talked:false}));
+  G.P.x=L.startPos.x*T+T/2;
+  G.P.y=L.startPos.y*T+T/2;
+  G.P.dir='right';G.P.moving=false;G.P.hf=0;G.P.sw=0;G.P.blocking=false;G.P.blockTimer=0;
+  G.cam.x=G.P.x-VW/2;
+  G.cam.y=G.P.y-VH*0.65;
+  G.phase='play';
+  setQuest('Find '+G.gemsNeeded+' gems');
+  updateHUD();
+  save();
+  hideOverlay();
+}
+
+function levelComplete(){
+  G.phase='menu';
+  const L=LEVELS[G.level-1];
+  const nL=LEVELS[G.level] || LEVELS[LEVELS.length-1];
+  G.stars+=2;save();
+  showOverlay(`
+    <h2>Chapter 2 — Level ${G.level} Complete</h2>
+    <p style="color:#f9a8d4;font-size:13px">★ ★ ★ ${G.stars} stars collected ★ ★ ★</p>
+    <div class="story">
+      <b>${L.boss.name}</b> has been defeated.<br>
+      ${G.clues.slice(-2).map(c=>'<p class="clue">• '+c+'</p>').join('')}
+    </div>
+    <p style="color:#fcd34d;font-size:13px">Next: ${nL.name}</p>
+    <p>${nL.intro.replace(/\n/g,'<br>')}</p>
+    <div class="hint"><b>Tip:</b> ${nL.tip}</div>
+    <div class="ml">
+      <button onclick="startNextLevel()">Continue →</button>
+      <button class="sec" onclick="openMenu()">Menu</button>
+    </div>
+  `);
+}
+
+window.startNextLevel=function(){
+  G.level++;G.hp=G.maxHp;
+  const L=LEVELS[G.level-1];
+  loadLevel(G.level);
+  // show pre-chain cutscene
+  if(L.preChain){
+    G.phase='cutscene';
+    runCutscene(L.preChain,()=>{G.phase='play';});
+  }
+};
+
+function gameComplete(){
+  G.phase='menu';
+  clearSave();
+  showOverlay(`
+    <h1>THE END</h1>
+    <p class="sub">chapter 2 complete</p>
+    <div class="art"><canvas id="end-art" width="100" height="80"></canvas></div>
+    <p>The Hollow King found peace.<br>The valley breathes again.</p>
+    <p style="color:#fcd34d">"Remember me, child. Just... once in a while."</p>
+    <p>Angie and Kevin walked home under more stars than they had ever seen before.</p>
+    <p style="color:#c4b5fd">They didn't say anything for a long time.<br>They didn't need to.</p>
+    <div class="story">
+      <b>Final stats:</b> ${G.stars} stars · ${G.clues.length} clues found
+    </div>
+    <div class="ml">
+      <button onclick="newGame()">Play Again</button>
+      <button class="sec" onclick="openMenu()">Main Menu</button>
+    </div>
+  `);
+  setTimeout(()=>{
+    const c=document.getElementById('end-art');
+    if(!c) return;
+    const ec=c.getContext('2d');
+    ec.imageSmoothingEnabled=false;
+    ec.fillStyle='#120524';ec.fillRect(0,0,100,80);
+    // stars
+    for(let i=0;i<40;i++){
+      ec.fillStyle=`rgba(255,255,200,${Math.random()*.8+.2})`;
+      ec.fillRect(Math.random()*100,Math.random()*50,2,2);
+    }
+    // angie silhouette
+    ec.fillStyle='#6d28d9';ec.fillRect(30,52,14,22);
+    ec.fillStyle='#fde68a';ec.fillRect(33,44,8,12);
+    ec.fillStyle='#78350f';ec.fillRect(31,42,12,6);
+    // kevin silhouette
+    ec.fillStyle='#2563eb';ec.fillRect(56,52,14,22);
+    ec.fillStyle='#fde68a';ec.fillRect(59,44,8,12);
+    ec.fillStyle='#78350f';ec.fillRect(57,42,12,6);
+    // connecting moment
+    ec.fillStyle='#fcd34d';ec.beginPath();ec.arc(50,58,3,0,Math.PI*2);ec.fill();
+  },100);
+}
+
+window.newGame=function(){clearSave();location.reload();};
+
+function retryLevel(){
+  G.hp=G.maxHp;
+  loadLevel(G.level);
+}
+window.retryLevel=retryLevel;
+
+// ─── MENU ───────────────────────────────────────────────────────────────────
+function openMenu(){
+  const prev=G.phase;
+  G.phase='menu';
+  showOverlay(`
+    <h2>Menu</h2>
+    <p>Chapter 2, Level ${G.level}: ${LEVELS[G.level-1].name}</p>
+    <p>Gems: ${G.gems}/${G.gemsNeeded} · Stars: ${G.stars} · HP: ${G.hp}/${G.maxHp}</p>
+    <div class="ml">
+      <button onclick="resumeGame()">Resume</button>
+      <button class="sec" onclick="showHelpScreen()">How to Play</button>
+      <button class="sec" onclick="saveNow()">Save Progress</button>
+      <button class="sec" onclick="retryLevel()">Restart Level</button>
+      <button class="sec" onclick="newGame()">New Game</button>
+    </div>
+  `);
+}
+window.openMenu=openMenu;
+
+window.resumeGame=function(){
+  hideOverlay();
+  G.phase='play';
+};
+
+window.saveNow=function(){save();toast('Progress saved!');hideOverlay();G.phase='play';};
+
+window.showHelpScreen=function(){
+  showOverlay(`
+    <h2>How to Play</h2>
+    <div class="hint">
+      <b>Walking:</b> WASD or arrow keys · D-Pad on mobile<br>
+      <b>Talk:</b> T key or TALK button — approach NPCs with ! above them<br>
+      <b>Action:</b> Space or ACT button — uses current tool<br>
+      <b>Menu:</b> Esc or ☰ button<br>
+    </div>
+    <div class="hint">
+      <b style="color:#fcd34d">✋ Hand (1):</b> Default. Collect gems by walking over them. Use ACT near signs/NPCs.<br>
+      <b style="color:#60a5fa">🛡 Shield (2):</b> Press ACT to activate a 2-second block. Deflects boss projectiles. Requires shield charges — ask NPCs for more.<br>
+      <b style="color:#a78bfa">✦ Staff (3):</b> Press ACT to fire a star bolt at the boss. Earned by defeating the Root Warden in Level 1. Only works near a boss.<br>
+      <b style="color:#86efac">📖 Journal (4):</b> Press ACT to review all clues and your story progress.<br>
+    </div>
+    <div class="hint">
+      <b style="color:#fcd34d">Boss tips:</b><br>
+      • Watch for attack telegraphs — bosses pause before shooting<br>
+      • Phase 2 and 3 are harder — use your shield more<br>
+      • Use the staff to deal damage from range<br>
+      • In Level 2: ask NPCs for shield charges before the boss<br>
+      • In Level 3: the boss has 3 phases — pace yourself<br>
+    </div>
+    <div class="ml">
+      <button onclick="openMenu()">Back</button>
+    </div>
+  `);
+};
+
+// ─── SELECT TOOL ────────────────────────────────────────────────────────────
+function selectTool(t){
+  G.tool=t;
+  document.querySelectorAll('.slot').forEach(s=>s.classList.toggle('active',s.dataset.t===t));
+  const d={
+    hand:'Hand — interact and collect',
+    shield:G.shieldCharge>0?'Shield ('+G.shieldCharge+' charges) — press ACT to block':'Shield — no charges (talk to NPCs)',
+    crystal:G.hasStaff?'Crystal Staff — press ACT to fire at boss':'Crystal Staff — defeat Level 1 boss to unlock',
+    journal:'Journal — press ACT to view clues'
+  };
+  toast(d[t]);
+}
+
+// ─── TITLE SCREEN ───────────────────────────────────────────────────────────
+function showTitle(){
+  G.phase='menu';
+  const sv=loadSave();
+  const hasSave=sv&&sv.level;
+  showOverlay(`
+    <h1>STARRY VALLEY</h1>
+    <p class="sub">chapter two — the long way home</p>
+    <div class="art"><canvas id="title-art" width="120" height="90"></canvas></div>
+    <p>The blight is spreading. Ancient things are waking.<br>Angie and Kevin must go deeper into the valley's dark heart<br>and face what has been forgotten there.</p>
+    <div class="hint">
+      <b>Controls:</b> WASD/arrows to move · T = Talk · Space = Act · 1-4 = Tools · Esc = Menu<br>
+      <b>Mobile:</b> D-pad bottom-left · TALK/ACT buttons bottom-right
+    </div>
+    <div class="ml">
+      <button onclick="startNewGame()">★ Start Chapter 2 ★</button>
+      ${hasSave?`<button class="sec" onclick="continueGame()">Continue (Level ${sv.level})</button>`:''}
+      <button class="sec" onclick="showHelpScreen()">How to Play</button>
+    </div>
+  `);
+  setTimeout(()=>{
+    const c=document.getElementById('title-art');
+    if(!c) return;
+    const tc=c.getContext('2d');
+    tc.imageSmoothingEnabled=false;
+    tc.fillStyle='#0d0320';tc.fillRect(0,0,120,90);
+    for(let i=0;i<50;i++){
+      const bri=Math.random()*.8+.2;
+      tc.fillStyle=`rgba(255,255,200,${bri})`;
+      tc.fillRect(Math.random()*120,Math.random()*60,bri>.7?2:1,bri>.7?2:1);
+    }
+    // Angie
+    tc.fillStyle='#6d28d9';tc.fillRect(28,58,18,26);
+    tc.fillStyle='#fde68a';tc.fillRect(30,50,14,12);
+    tc.fillStyle='#78350f';tc.fillRect(28,46,18,8);
+    tc.fillStyle='#f472b6';tc.fillRect(29,59,16,3);
+    // Kevin
+    tc.fillStyle='#2563eb';tc.fillRect(74,58,18,26);
+    tc.fillStyle='#dc2626';tc.fillRect(73,62,20,3);
+    tc.fillStyle='#fde68a';tc.fillRect(76,50,14,12);
+    tc.fillStyle='#78350f';tc.fillRect(74,46,18,8);
+    // valley
+    tc.fillStyle='#14532d';tc.fillRect(0,78,120,12);
+    // glow between them
+    tc.fillStyle='rgba(252,211,77,.25)';
+    tc.beginPath();tc.arc(60,70,20,0,Math.PI*2);tc.fill();
+  },80);
+}
+
+window.startNewGame=function(){
+  clearSave();G.hp=5;G.stars=0;G.clues=[];G.hasStaff=false;G.shieldCharge=0;
+  loadLevel(1);
+  const L=LEVELS[0];
+  if(L.preChain){G.phase='cutscene';runCutscene(L.preChain,()=>{G.phase='play';});}
+};
+
+window.continueGame=function(){
+  const sv=loadSave();
+  if(!sv){window.startNewGame();return;}
+  G.level=sv.level||1;G.stars=sv.gems||0;G.clues=sv.clues||[];G.hasStaff=sv.hasStaff||false;
+  G.hp=5;G.shieldCharge=0;
+  loadLevel(G.level);
+};
+
+// ─── MAIN LOOP ──────────────────────────────────────────────────────────────
+function update(){
+  G.tick++;
+  const P=G.P;
+
+  // block timer
+  if(P.blocking){
+    P.blockTimer--;
+    if(P.blockTimer<=0){P.blocking=false;P.blockTimer=0;}
+  }
+  if(P.hf>0) P.hf--;
+  if(P.sw>0) P.sw--;
+
+  if(G.phase==='play'||G.phase==='boss'){
+    const k=G.keys;
+    let dx=0,dy=0;
+    if(k['w']||k['ArrowUp']||k['up']) dy=-1;
+    if(k['s']||k['ArrowDown']||k['down']) dy=1;
+    if(k['a']||k['ArrowLeft']||k['left']) dx=-1;
+    if(k['d']||k['ArrowRight']||k['right']) dx=1;
+    if(dx&&dy){dx*=.707;dy*=.707;}
+    movePlayer(dx,dy);
+
+    // thorns
+    if(touchThorns(P.x,P.y)&&P.hf<=0){
+      G.hp--;P.hf=50;flashDamage();
+      if(G.hp<=0){playerDied();return;}
+      updateHUD();
+    }
+
+    checkPickups();
+    if(G.phase==='boss') updateBoss();
+    updateProjectiles();
+  }
+
+  G.particles=G.particles.filter(p=>{
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.life--;return p.life>0;
+  });
+
+  // camera — player stays at 60% vertical
+  if(G.level>=1&&G.level<=LEVELS.length){
+    const L=LEVELS[G.level-1];
+    const tx=P.x-VW/2, ty=P.y-VH*.62;
+    G.cam.x+=(tx-G.cam.x)*.16;
+    G.cam.y+=(ty-G.cam.y)*.16;
+    G.cam.x=Math.max(0,Math.min(L.size.w*T-VW,G.cam.x));
+    G.cam.y=Math.max(0,Math.min(L.size.h*T-VH,G.cam.y));
+  }
+}
+
+function render(){
+  VW=cv.clientWidth||940;VH=cv.clientHeight||640;
+  ctx.fillStyle='#07031a';ctx.fillRect(0,0,VW,VH);
+
+  // background stars (always)
+  for(let i=0;i<80;i++){
+    const bx=((i*73+17)%(VW+100))-50;
+    const by=((i*41+7)%(VH*.6));
+    const tw=.25+.45*Math.sin(G.tick*.03+i*.7);
+    ctx.fillStyle=`rgba(255,255,210,${tw})`;
+    ctx.fillRect(bx,by,tw>.7?2:1,tw>.7?2:1);
+  }
+
+  if(G.phase==='menu'||G.phase==='title') return;
+
+  const L=LEVELS[G.level-1];
+  ctx.save();
+  ctx.translate(-Math.floor(G.cam.x),-Math.floor(G.cam.y));
+
+  // tile floor
+  const c0=Math.max(0,Math.floor(G.cam.x/T));
+  const c1=Math.min(L.size.w,Math.ceil((G.cam.x+VW)/T));
+  const r0=Math.max(0,Math.floor(G.cam.y/T));
+  const r1=Math.min(L.size.h,Math.ceil((G.cam.y+VH)/T));
+  for(let y=r0;y<r1;y++){
+    for(let x=c0;x<c1;x++){
+      ctx.fillStyle=(x+y)%2===0?L.bg:L.bgAlt;
+      ctx.fillRect(x*T,y*T,T,T);
+      if((x*3+y*7)%11===0){ctx.fillStyle='rgba(255,255,255,.03)';ctx.fillRect(x*T+4,y*T+8,2,2);}
+    }
+  }
+
+  // gather renderable objects sorted by Y (painter's algorithm)
+  const drawList=[];
+  for(const o of G.objs){
+    if(o.collected||o.defeated) continue;
+    drawList.push({y:o.y*T+T/2,draw:()=>drawTile(o.t,o.x*T+T/2,o.y*T+T/2,G.tick)});
+  }
+  for(const n of G.npcs){
+    drawList.push({y:n.y*T+T/2,draw:()=>drawNPC(n,G.tick)});
+  }
+  drawList.push({y:G.P.y,draw:()=>{
+    const P=G.P;
+    drawAngie(P.x,P.y,P.dir,P.moving?P.wf:0,P.hf,P.blocking);
+  }});
+  if(G.boss&&!G.boss.defeated){
+    drawList.push({y:G.boss.py,draw:()=>drawBoss(G.boss,G.tick)});
+  }
+  drawList.sort((a,b)=>a.y-b.y);
+  for(const d of drawList) d.draw();
+
+  // projectiles
+  for(const p of G.projectiles) drawProjectile(p);
+
+  // particles
+  for(const p of G.particles){
+    ctx.globalAlpha=p.life/p.maxLife;
+    ctx.fillStyle=p.color;ctx.fillRect(p.x-2,p.y-2,4,4);
+    ctx.fillStyle='#fff';ctx.fillRect(p.x,p.y,1,1);
+    ctx.globalAlpha=1;
+  }
+
+  // nearby indicator
+  let nearNPC=null,nearDist=62**2;
+  for(const n of G.npcs){
+    const d=(G.P.x-n.x*T-T/2)**2+(G.P.y-n.y*T-T/2)**2;
+    if(d<nearDist){nearDist=d;nearNPC=n;}
+  }
+  if(nearNPC&&(G.phase==='play'||G.phase==='boss')){
+    const sx=nearNPC.x*T+T/2-G.cam.x;
+    const sy=nearNPC.y*T-G.cam.y;
+    ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(sx-55,sy-28,110,20);
+    ctx.fillStyle='#67e8f9';ctx.font='10px monospace';ctx.textAlign='center';
+    ctx.fillText('TALK: '+nearNPC.name,sx,sy-13);
+  }
+
+  ctx.restore();
+}
+
+function loop(){update();render();requestAnimationFrame(loop);}
+
+// ─── INPUT ──────────────────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  G.keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+  if(e.key==='t'||e.key==='T') doTalk();
+  if(e.key===' '||e.key==='Enter'){doAct();e.preventDefault();}
+  if(e.key==='1') selectTool('hand');
+  if(e.key==='2') selectTool('shield');
+  if(e.key==='3') selectTool('crystal');
+  if(e.key==='4') selectTool('journal');
+  if(e.key==='Escape'){
+    if(G.phase==='dialog') closeDialog();
+    else if(G.phase==='play'||G.phase==='boss') openMenu();
+    else if(G.phase==='menu'){hideOverlay();G.phase='play';}
+  }
+});
+document.addEventListener('keyup',e=>G.keys[e.key]=false);
+
+function bindBtn(id,dn,up){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.addEventListener('pointerdown',e=>{dn();el.classList.add('dn');e.preventDefault();});
+  el.addEventListener('pointerup',()=>{if(up)up();el.classList.remove('dn');});
+  el.addEventListener('pointerleave',()=>{if(up)up();el.classList.remove('dn');});
+  el.addEventListener('pointercancel',()=>{if(up)up();el.classList.remove('dn');});
+}
+bindBtn('du',()=>G.keys['up']=true,()=>G.keys['up']=false);
+bindBtn('dd',()=>G.keys['down']=true,()=>G.keys['down']=false);
+bindBtn('dl',()=>G.keys['left']=true,()=>G.keys['left']=false);
+bindBtn('dr',()=>G.keys['right']=true,()=>G.keys['right']=false);
+bindBtn('btn-talk',doTalk);
+bindBtn('btn-act',doAct);
+document.getElementById('menu-btn').onclick=openMenu;
+document.querySelectorAll('.slot').forEach(s=>s.addEventListener('click',()=>selectTool(s.dataset.t)));
+
+window.G=G; // expose for inline onclick
+
+// ─── RESIZE ─────────────────────────────────────────────────────────────────
+function resize(){
+  const w=cv.clientWidth||940,h=cv.clientHeight||640;
+  cv.width=w;cv.height=h;VW=w;VH=h;
+  ctx.imageSmoothingEnabled=false;
+}
+window.addEventListener('resize',resize);resize();
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+loadLevel(1);
+showTitle();
+loop();
+</script>
+</body>
+</html>
