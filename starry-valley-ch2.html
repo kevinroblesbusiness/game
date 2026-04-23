@@ -172,9 +172,10 @@ const G={
   gems:0,           // per-level collectibles
   gemsNeeded:5,
   shieldCharge:0,   // 0-3 charges
-  hasStaff:false,
+  hasStaff:true,
   clues:[],
   tool:'hand',
+  staffCooldown:0,
   keys:{},
   cam:{x:0,y:0},
   P:{x:0,y:0,dir:'down',moving:false,wf:0,wt:0,hf:0,sw:0,blocking:false,blockTimer:0},
@@ -1275,6 +1276,7 @@ function doAct(){
       toast('No shield charges! Talk to NPCs to find more.');
     }
   } else if(G.tool==='crystal'){
+    if(G.staffCooldown>0){return;}
     if(!G.hasStaff){toast('You don\'t have the Crystal Staff yet. Defeat the Root Warden!');return;}
     // fire star bolt toward boss
     if(G.boss&&!G.boss.defeated){
@@ -1284,11 +1286,13 @@ function doAct(){
       const spd=6;
       G.projectiles.push({x:P.x,y:P.y,vx:dx/d*spd,vy:dy/d*spd,type:'star',life:120,fromBoss:false,dmg:12});
       P.sw=12;
+      G.staffCooldown=40;
       spawnParticles(P.x,P.y-20,'#a78bfa',5);
     } else if(G.phase==='play'){
       // in non-boss: heal slightly
       const p=G.P;
       p.sw=12;
+      G.staffCooldown=40;
       spawnParticles(p.x,p.y-20,'#a78bfa',8);
       toast('Crystal staff pulses...');
     }
@@ -1646,6 +1650,7 @@ function update(){
   }
   if(P.hf>0) P.hf--;
   if(P.sw>0) P.sw--;
+  if(G.staffCooldown>0) G.staffCooldown--;
 
   if(G.phase==='play'||G.phase==='boss'){
     const k=G.keys;
