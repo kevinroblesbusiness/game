@@ -155,6 +155,7 @@ const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=false;
 let VW=940,VH=640;
 const T=32;
+const ZOOM=1.25;
 
 // ─── SAVE ──────────────────────────────────────────────────────────────────
 const SK='sv_ch2_v1';
@@ -860,7 +861,7 @@ function touchWater(x,y){
 // ─── MOVE ───────────────────────────────────────────────────────────────────
 function movePlayer(dx,dy){
   const P=G.P;
-  const spd=3.6;
+  const spd=4.2;
   const nx=P.x+dx*spd, ny=P.y+dy*spd;
   if(!collide(nx,P.y)) P.x=nx;
   if(!collide(P.x,ny)) P.y=ny;
@@ -868,7 +869,7 @@ function movePlayer(dx,dy){
     P.moving=true;
     if(Math.abs(dx)>Math.abs(dy)) P.dir=dx>0?'right':'left';
     else if(dy) P.dir=dy>0?'down':'up';
-    P.wt++;if(P.wt>=7){P.wt=0;P.wf=(P.wf+1)%4;}
+    P.wt++;if(P.wt>=7){P.wt=0;P.wf=(P.wf+1)%4;spawnParticles(P.x+Math.random()*6-3,P.y+10,'#9a8b9a',2,{speedVar:3,gravity:0.08,life:20,sizeVar:0.3});}
     P.idle=0;
   } else {
     P.moving=false;P.wf=0;P.idle=(P.idle||0)+1;
@@ -1220,9 +1221,11 @@ function playerDied(){
 }
 
 // ─── PARTICLES ──────────────────────────────────────────────────────────────
-function spawnParticles(x,y,color,n){
+function spawnParticles(x,y,color,n,opts={}){
+  const options={size:4,speedVar:5,gravity:0.12,life:40,sizeVar:0,...opts};
   for(let i=0;i<n;i++){
-    G.particles.push({x,y,vx:(Math.random()-.5)*5,vy:-Math.random()*4-1,life:40,maxLife:40,color});
+    const sizeVar=options.sizeVar>0?options.size*(0.5+Math.random()*options.sizeVar):options.size;
+    G.particles.push({x,y,vx:(Math.random()-.5)*options.speedVar,vy:-Math.random()*4-1,life:options.life,maxLife:options.life,color,size:sizeVar,gravity:options.gravity});
   }
 }
 
@@ -1269,6 +1272,7 @@ function doAct(){
   if(G.tool==='shield'){
     if(G.shieldCharge>0){
       P.blocking=true;P.blockTimer=120;G.shieldCharge--;
+      spawnParticles(P.x,P.y,'#60a5fa',10,{speedVar:4,life:25});
       toast('Shield activated! Blocking for 2 seconds.');
       updateHUD();
     } else {
@@ -1335,7 +1339,7 @@ function checkPickups(){
     const ox=o.x*T+T/2, oy=o.y*T+T/2;
     if(o.t==='gem'&&(P.x-ox)**2+(P.y-oy)**2<26**2){
       o.collected=true;G.gems++;
-      spawnParticles(ox,oy-14,'#fcd34d',12);
+      spawnParticles(ox,oy-14,'#fcd34d',20,{speedVar:7,sizeVar:0.5,life:40});
       toast('✦ Star-gem ('+(G.gems)+'/'+G.gemsNeeded+')');
       if(G.gems>=L.gemsNeeded&&!G.boss&&!G.bossIntroShown){
         G.bossIntroShown=true;
@@ -1669,18 +1673,23 @@ function update(){
     updateProjectiles();
   }
 
-  G.particles=G.particles.filter(p=>{
-    p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.life--;return p.life>0;
-  });
+  let validParticles=[];
+  for(const p of G.particles){
+    p.x+=p.vx;p.y+=p.vy;p.vy+=(p.gravity||0.12);p.life--;
+    if(p.life>0) validParticles.push(p);
+  }
+  G.particles=validParticles;
 
-  // camera — player stays at 60% vertical
+  // camera — player stays at 60% vertical (with zoom)
   if(G.level>=1&&G.level<=LEVELS.length){
     const L=LEVELS[G.level-1];
-    const tx=P.x-VW/2, ty=P.y-VH*.62;
+    const tx=P.x-(VW/ZOOM)/2, ty=P.y-(VH/ZOOM)*.62;
     G.cam.x+=(tx-G.cam.x)*.16;
     G.cam.y+=(ty-G.cam.y)*.16;
-    G.cam.x=Math.max(0,Math.min(L.size.w*T-VW,G.cam.x));
-    G.cam.y=Math.max(0,Math.min(L.size.h*T-VH,G.cam.y));
+    const maxX=Math.max(0,L.size.w*T-(VW/ZOOM));
+    const maxY=Math.max(0,L.size.h*T-(VH/ZOOM));
+    G.cam.x=Math.max(0,Math.min(maxX,G.cam.x));
+    G.cam.y=Math.max(0,Math.min(maxY,G.cam.y));
   }
 }
 
@@ -1702,6 +1711,7 @@ function render(){
   const L=LEVELS[G.level-1];
   ctx.save();
   ctx.translate(-Math.floor(G.cam.x),-Math.floor(G.cam.y));
+  ctx.translate(VW/2,VH/2);ctx.scale(ZOOM,ZOOM);ctx.translate(-VW/(2*ZOOM),-VH/(2*ZOOM));
 
   // tile floor
   const c0=Math.max(0,Math.floor(G.cam.x/T));
@@ -1741,8 +1751,10 @@ function render(){
   // particles
   for(const p of G.particles){
     ctx.globalAlpha=p.life/p.maxLife;
-    ctx.fillStyle=p.color;ctx.fillRect(p.x-2,p.y-2,4,4);
-    ctx.fillStyle='#fff';ctx.fillRect(p.x,p.y,1,1);
+    ctx.fillStyle=p.color;
+    const s=p.size||4;
+    ctx.fillRect(p.x-s/2,p.y-s/2,s,s);
+    if(s>=3) ctx.fillRect(p.x-0.5,p.y-0.5,1,1);
     ctx.globalAlpha=1;
   }
 
