@@ -22,9 +22,8 @@ __pycache__/              # Python cache
 *.pyc                     # Python compiled files
 .env                      # Environment variables
 
-# Build artifacts
-dist/                     # Built files
-build/                    # Build directory
+# Build artifacts (but keep dist/ for releases)
+build/temp/               # Build temporary files
 *.bundle.js               # Bundled JavaScript
 
 # Temporary files
