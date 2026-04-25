@@ -2154,8 +2154,12 @@ function updateProjectiles(){
 function loadLevel(n){
   G.level=n;
   const L=LEVELS[n-1];
-  // grant sword for Chapter 3
-  if(L.chapter===3) G.hasSword=true;
+  // grant sword and staff for Chapter 3
+  if(L.chapter===3){
+    G.hasSword=true;G.hasStaff=true;
+    const badge=document.getElementById('badge-crystal');
+    if(badge) badge.style.display='none';
+  }
   G.gemsNeeded=L.gemsNeeded;
   G.gems=0;
   G.boss=null;
