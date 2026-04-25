@@ -253,7 +253,7 @@ const LEVELS=[
   boss:{
     id:'root_warden',
     name:'ROOT WARDEN',
-    hp:80, maxHp:80,
+    hp:85, maxHp:85,
     phase:1,
     x:30,y:11,
     color:'#1a4a0a',
@@ -1592,6 +1592,7 @@ function showTitle(){
       <button onclick="startNewGame()">★ Start Chapter 2 ★</button>
       ${hasSave?`<button class="sec" onclick="continueGame()">Continue (Level ${sv.level})</button>`:''}
       <button class="sec" onclick="showHelpScreen()">How to Play</button>
+      <button class="sec" onclick="showLevelSelect()">★ Level Select ★</button>
     </div>
   `);
   setTimeout(()=>{
@@ -1636,6 +1637,30 @@ window.continueGame=function(){
   G.level=sv.level||1;G.stars=sv.stars||0;G.clues=sv.clues||[];G.hasStaff=sv.hasStaff||false;
   G.hp=5;G.shieldCharge=0;
   loadLevel(G.level);
+};
+
+function showLevelSelect(){
+  showOverlay(`
+    <h2>Level Select (Testing)</h2>
+    <p style="color:#fcd34d">Jump to any level to test features</p>
+    <div class="ml" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${LEVELS.map((L,i)=>`<button onclick="jumpToLevel(${i+1})" style="background:#1e1b4b;color:#c4b5fd;padding:12px;font-size:12px">
+        <b>Level ${i+1}</b><br><span style="font-size:10px">${L.name.substring(0,20)}</span>
+      </button>`).join('')}
+    </div>
+    <div class="ml">
+      <button class="sec" onclick="showTitle()">Back</button>
+    </div>
+  `);
+}
+window.showLevelSelect=showLevelSelect;
+
+window.jumpToLevel=function(n){
+  clearSave();
+  G.hp=5;G.stars=0;G.clues=[];
+  G.hasStaff=n>1;G.hasSword=n>3;
+  G.shieldCharge=n>1?2:0;
+  loadLevel(n);
 };
 
 // ─── MAIN LOOP ──────────────────────────────────────────────────────────────
