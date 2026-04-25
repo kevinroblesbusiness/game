@@ -528,12 +528,46 @@ function drawAngie(x,y,dir,frame,hitFlash,blocking){
   ctx.fillRect(cx+5,cy+19+bob+arm,3,11);ctx.fillRect(cx+21,cy+19+bob-arm,3,11);
   ctx.fillStyle='#6d28d9';
   ctx.fillRect(cx+2,cy+18+bob+arm,3,10);ctx.fillRect(cx+24,cy+18+bob-arm,3,10);
-  // shield effect
+  // shield effect — kite-shaped shield with rim and star emblem
   if(blocking){
-    ctx.fillStyle='rgba(96,165,250,0.45)';
-    ctx.beginPath();ctx.arc(cx+26,cy+22,12,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='#93c5fd';ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(cx+26,cy+22,12,0,Math.PI*2);ctx.stroke();
+    const sx=cx+26, sy=cy+22;
+    // glow halo
+    ctx.fillStyle='rgba(96,165,250,0.25)';
+    ctx.beginPath();ctx.arc(sx,sy,16,0,Math.PI*2);ctx.fill();
+    // shield body (kite shape)
+    ctx.fillStyle='#1e3a8a';
+    ctx.beginPath();
+    ctx.moveTo(sx,sy-11);
+    ctx.lineTo(sx+9,sy-5);
+    ctx.lineTo(sx+8,sy+7);
+    ctx.lineTo(sx,sy+13);
+    ctx.lineTo(sx-8,sy+7);
+    ctx.lineTo(sx-9,sy-5);
+    ctx.closePath();ctx.fill();
+    // inner highlight
+    ctx.fillStyle='#3b82f6';
+    ctx.beginPath();
+    ctx.moveTo(sx,sy-7);
+    ctx.lineTo(sx+5,sy-3);
+    ctx.lineTo(sx+4,sy+4);
+    ctx.lineTo(sx,sy+8);
+    ctx.lineTo(sx-4,sy+4);
+    ctx.lineTo(sx-5,sy-3);
+    ctx.closePath();ctx.fill();
+    // star emblem
+    ctx.fillStyle='#fcd34d';
+    ctx.fillRect(sx-1,sy-3,2,7);
+    ctx.fillRect(sx-3,sy,7,2);
+    // metal rim
+    ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.moveTo(sx,sy-11);
+    ctx.lineTo(sx+9,sy-5);
+    ctx.lineTo(sx+8,sy+7);
+    ctx.lineTo(sx,sy+13);
+    ctx.lineTo(sx-8,sy+7);
+    ctx.lineTo(sx-9,sy-5);
+    ctx.closePath();ctx.stroke();
   }
   // head
   ctx.fillStyle='#fde68a';ctx.fillRect(cx+7,cy+5+bob,16,15);
