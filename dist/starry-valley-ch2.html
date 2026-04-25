@@ -158,7 +158,7 @@ const T=32;
 
 // ─── SAVE ──────────────────────────────────────────────────────────────────
 const SK='sv_ch2_v1';
-function save(){try{localStorage.setItem(SK,JSON.stringify({level:G.level,stars:G.stars,clues:G.clues,hasStaff:G.hasStaff}))}catch(e){}}
+function save(){try{localStorage.setItem(SK,JSON.stringify({level:G.level,stars:G.stars,clues:G.clues,hasStaff:G.hasStaff,hasSword:G.hasSword}))}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SK);return r?JSON.parse(r):null}catch(e){return null}}
 function clearSave(){try{localStorage.removeItem(SK)}catch(e){}}
 
@@ -173,6 +173,7 @@ const G={
   gemsNeeded:5,
   shieldCharge:0,   // 0-3 charges
   hasStaff:false,
+  hasSword:false,
   clues:[],
   tool:'hand',
   keys:{},
@@ -497,6 +498,223 @@ const LEVELS=[
     {t:'sign',x:6,y:13,msg:'"Here stood Eryndal, first guardian. His care kept the valley alive."'},
     {t:'portal',x:38,y:13},
   ]
+},
+
+// ════════════════════ CHAPTER 3: STARS THAT FELL ════════════════════
+// After defeating the Hollow King, the sky tore open and starlight corruption
+// fell into the valley. New, stranger threats emerge from beyond.
+
+{
+  id:4,
+  chapter:3,
+  name:'The Shattered Observatory',
+  bg:'#0a0420',bgAlt:'#070218',
+  size:{w:38,h:24},
+  gemsNeeded:5,
+  startPos:{x:3,y:12},
+  story:`The sky tore open. Stars fell.\n\nA crater smokes where the old observatory stood. Something climbed out of it.\n\nAngie has her sword now. Kevin stayed behind to warn the village.`,
+  storyTone:'mystery',
+  tip:'Collect 5 starshards. Defeat the <b>Astral Devourer</b> — it teleports. Watch where it vanishes from!',
+  preChain:[
+    {speaker:'Angie',color:'#6d28d9',hair:'#78350f',skin:'#fde68a',
+     lines:[
+       "The sky's still bleeding. Whatever this is — it's worse than the Hollow King.",
+       "(She draws her sword.)",
+       "Let's see what fell from the stars."
+     ]},
+  ],
+  npcs:[
+    {id:'astronomer',name:'Astronomer Pell',x:11,y:9,color:'#6d28d9',hair:'#1e1b4b',skin:'#fde68a',
+     dialog:[
+       {a:"You felt it too, didn't you. The wrongness. It came from above this time.",emotion:'haunted'},
+       {q:'What did you see?',a:"A thing made of starlight and hunger. It vanished — then reappeared somewhere else. It hunts by teleport.",emotion:'fearful',clue:'The Astral Devourer teleports — anticipate its reappearance'},
+       {q:'How do I fight it?',a:"Where it vanishes, void remains. Don\'t stand there. Strike when it lands.",emotion:'urgent',clue:'Void zones explode where the Astral Devourer teleported from'},
+     ]},
+    {id:'meteor_child',name:'Wren',x:24,y:15,color:'#fbbf24',hair:'#451a03',skin:'#fde68a',isChild:true,
+     dialog:[
+       {a:"Are you the hero? My grandma said heroes come when stars fall.",emotion:'hopeful'},
+       {q:'Stay safe, Wren.',a:"I will. Take this — it fell from the sky. It feels warm. Maybe it'll help.",emotion:'kind',gives:'shield'},
+     ]},
+  ],
+  bossTriggerGems:5,
+  boss:{
+    id:'astral_devourer',
+    name:'ASTRAL DEVOURER',
+    hp:160, maxHp:160,
+    phase:1,
+    x:32,y:12,
+    color:'#7c3aed',
+    size:46,
+    preDialog:[
+      {speaker:'Astral Devourer',color:'#c4b5fd',
+       lines:["*a voice from many directions at once*","HUNGER. ENDLESS. I CONSUME LIGHT."]},
+      {speaker:'Angie',color:'#6d28d9',lines:["Then choke on mine."]},
+    ],
+    postDialog:[
+      {speaker:'Astral Devourer',color:'#c4b5fd',lines:["*it folds inward like collapsing starlight*","...the hunger... rests..."]},
+      {speaker:'Angie',color:'#6d28d9',lines:["One down. Two more falling stars to find. I have to keep moving."]},
+    ],
+    phases:[
+      {hpThreshold:1.0,pattern:'teleport',speed:1.4,shootRate:120,desc:'TELEPORT — strike where it lands'},
+      {hpThreshold:0.6,pattern:'teleport',speed:1.7,shootRate:90,desc:'FASTER — voids stay longer'},
+      {hpThreshold:0.3,pattern:'teleport',speed:2.0,shootRate:60,desc:'FRENZY — multi-teleport'},
+    ],
+  },
+  objs:[
+    {t:'gem',x:7,y:8},{t:'gem',x:14,y:6},{t:'gem',x:18,y:14},{t:'gem',x:24,y:9},{t:'gem',x:30,y:6},
+    {t:'tree',x:2,y:2},{t:'tree',x:35,y:2},{t:'tree',x:2,y:21},{t:'tree',x:35,y:21},
+    {t:'rock',x:11,y:13},{t:'rock',x:21,y:5},{t:'rock',x:27,y:16},
+    {t:'dead',x:9,y:5},{t:'dead',x:16,y:11},{t:'dead',x:25,y:6},{t:'dead',x:31,y:13},
+    {t:'sign',x:5,y:5,msg:'"Observatory of Sera. Founded in the year of clear skies."'},
+    {t:'portal',x:35,y:12},
+  ]
+},
+
+{
+  id:5,
+  chapter:3,
+  name:'The Mirror Lake',
+  bg:'#041a2e',bgAlt:'#02101e',
+  size:{w:38,h:24},
+  gemsNeeded:5,
+  startPos:{x:3,y:12},
+  story:`The lake didn't freeze. It became a mirror.\n\nReflections climbed out. They wore Angie's face.\n\nKevin was supposed to meet her here. He hasn't.`,
+  storyTone:'unsettling',
+  tip:'Defeat the <b>Mirror Twin</b> — she SPLITS. Hit every clone to win.',
+  preChain:[
+    {speaker:'Angie',color:'#6d28d9',hair:'#78350f',skin:'#fde68a',
+     lines:[
+       "Kevin? ...Kevin, you said you'd meet me here.",
+       "(A reflection in the lake turns to look at her.)",
+       "Oh no."
+     ]},
+  ],
+  npcs:[
+    {id:'fisher_orin',name:'Old Orin',x:10,y:8,color:'#0c4a6e',hair:'#1e293b',skin:'#cbd5e1',
+     dialog:[
+       {a:"The lake stopped being water. Started being something else. Don't look at it too long.",emotion:'wary'},
+       {q:'What happens if you do?',a:"It looks back. Then it climbs out wearing your face.",emotion:'grim',clue:'The Mirror Twin wears your reflection — it can split into copies'},
+       {q:'How do I beat my own reflection?',a:"Strike them all. Every clone. The real one bleeds light when struck.",emotion:'urgent',clue:'The true Mirror Twin glows brighter than its clones when hit'},
+     ]},
+    {id:'mirror_kevin',name:'Kevin?',x:28,y:14,color:'#2563eb',hair:'#78350f',skin:'#fde68a',isKevin:true,
+     dialog:[
+       {a:"Angie. Don't look at the lake. Whatever you do.",emotion:'urgent'},
+       {q:'Are you the real Kevin?',a:"...That's a question I'd be insulted to be asked, normally. But honestly? I'm not sure anymore. Just be careful.",emotion:'haunted'},
+     ]},
+  ],
+  bossTriggerGems:5,
+  boss:{
+    id:'mirror_twin',
+    name:'MIRROR TWIN',
+    hp:180, maxHp:180,
+    phase:1,
+    x:32,y:12,
+    color:'#06b6d4',
+    size:44,
+    preDialog:[
+      {speaker:'Mirror Twin',color:'#67e8f9',
+       lines:["*she has Angie\'s exact voice*","I am you. I am every choice you didn\'t make.","Why don't you stay here? Let ME go home."]},
+      {speaker:'Angie',color:'#6d28d9',lines:["Kevin's waiting on me. Move."]},
+    ],
+    postDialog:[
+      {speaker:'Mirror Twin',color:'#67e8f9',lines:["*the clones shatter like glass*","...you really do choose them every time, don't you..."]},
+      {speaker:'Angie',color:'#6d28d9',lines:["Every time. Two down. One more."]},
+    ],
+    phases:[
+      {hpThreshold:1.0,pattern:'reflect',speed:1.5,shootRate:90,desc:'SOLO — single reflection'},
+      {hpThreshold:0.6,pattern:'split2',speed:1.8,shootRate:80,desc:'SPLIT — 2 clones'},
+      {hpThreshold:0.3,pattern:'split3',speed:2.1,shootRate:65,desc:'SHATTER — 3 clones!'},
+    ],
+  },
+  objs:[
+    {t:'gem',x:6,y:7},{t:'gem',x:13,y:14},{t:'gem',x:20,y:6},{t:'gem',x:26,y:16},{t:'gem',x:31,y:8},
+    {t:'tree',x:2,y:2},{t:'tree',x:35,y:2},{t:'tree',x:2,y:21},{t:'tree',x:35,y:21},
+    {t:'water',x:14,y:11},{t:'water',x:15,y:11},{t:'water',x:14,y:12},{t:'water',x:15,y:12},
+    {t:'water',x:22,y:13},{t:'water',x:23,y:13},
+    {t:'rock',x:9,y:11},{t:'rock',x:25,y:8},{t:'rock',x:30,y:14},
+    {t:'sign',x:5,y:6,msg:'"Lake Eyrie — fishing forbidden under the new moon."'},
+    {t:'portal',x:35,y:12},
+  ]
+},
+
+{
+  id:6,
+  chapter:3,
+  name:'The Fallen Star Palace',
+  bg:'#1a0820',bgAlt:'#10041a',
+  size:{w:42,h:26},
+  gemsNeeded:6,
+  startPos:{x:3,y:13},
+  story:`Where the largest star fell, a crystal palace grew overnight.\n\nThis is the source. The thing that called the others.\n\nAngie walks in alone. Kevin will be at the door waiting when she walks out. He always is.`,
+  storyTone:'epic',
+  tip:'Final boss: <b>Starfall Empress</b>. She combines every power. Use everything you\'ve learned.',
+  preChain:[
+    {speaker:'Angie',color:'#6d28d9',hair:'#78350f',skin:'#fde68a',
+     lines:[
+       "This is it. The last one.",
+       "Kevin — I'll see you on the other side.",
+       "(She steps inside.)"
+     ]},
+  ],
+  npcs:[
+    {id:'crystal_keeper',name:'Crystal Keeper',x:14,y:10,color:'#d946ef',hair:'#86198f',skin:'#fae8ff',
+     dialog:[
+       {a:"You came. Few do. Fewer leave.",emotion:'solemn'},
+       {q:'Who is the Empress?',a:"The one who called the stars to fall. She wields shockwaves, teleports, and clones — every gift of every fallen lord.",emotion:'grave',clue:'The Starfall Empress combines all previous boss abilities'},
+       {q:'How do I beat her?',a:"You\'ve already done it once. Three times, in fact. Each phase is a fight you\'ve survived before. Trust your training.",emotion:'kind'},
+     ]},
+    {id:'kevin_l6',name:'Kevin',x:24,y:18,color:'#2563eb',hair:'#78350f',skin:'#fde68a',isKevin:true,
+     dialog:[
+       {a:"You made it. I was scared you wouldn't this time.",emotion:'relieved'},
+       {q:'I always make it.',a:"Yeah. You do. Go finish this. I'll be right here when you come back.",emotion:'warm'},
+     ]},
+  ],
+  bossTriggerGems:6,
+  boss:{
+    id:'starfall_empress',
+    name:'STARFALL EMPRESS',
+    hp:280, maxHp:280,
+    phase:1,
+    x:37,y:13,
+    color:'#a21caf',
+    size:54,
+    preDialog:[
+      {speaker:'Starfall Empress',color:'#f0abfc',
+       lines:["*a voice like a chorus of dying stars*","I CALLED THE STARS DOWN. I AM THE WOUND IN THE SKY.","KNEEL, OR FALL WITH THEM."]},
+      {speaker:'Angie',color:'#6d28d9',lines:["I came too far to kneel. Bring it."]},
+    ],
+    midFightDialog:[
+      {hpPct:0.6,
+       lines:[
+         {speaker:'Starfall Empress',color:'#f0abfc',line:"YOU WALK IN THEIR SHADOWS. THE WARDEN. THE TIDE. THE KING."},
+         {speaker:'Angie',color:'#6d28d9',line:"They\'re with me. Let\'s go."},
+       ]},
+      {hpPct:0.3,
+       lines:[
+         {speaker:'Starfall Empress',color:'#f0abfc',line:"*her form fractures into starlight*  END IT THEN. END THE SKY."},
+         {speaker:'Angie',color:'#6d28d9',line:"No. End the falling. The sky stays."},
+       ]},
+    ],
+    postDialog:[
+      {speaker:'Starfall Empress',color:'#f0abfc',lines:["*the wound in the sky closes*","...the stars... return to where they belong...","you were... kinder than I expected..."]},
+      {speaker:'Angie',color:'#6d28d9',lines:["Go home. Whatever home is for you."]},
+      {speaker:'Kevin',color:'#2563eb',lines:["(He\'s waiting at the door, like he said.)","You came back. You always do.","Let\'s go home, Angie. The valley needs both of us."]},
+    ],
+    phases:[
+      {hpThreshold:1.0,pattern:'shockwave',speed:1.5,shootRate:100,desc:'WARDEN\'S WRATH — shockwaves'},
+      {hpThreshold:0.6,pattern:'teleport',speed:1.9,shootRate:80,desc:'DEVOURER\'S HUNGER — teleports'},
+      {hpThreshold:0.3,pattern:'split3',speed:2.3,shootRate:60,desc:'TWIN\'S SHATTER — clones!'},
+    ],
+  },
+  objs:[
+    {t:'gem',x:7,y:8},{t:'gem',x:14,y:14},{t:'gem',x:21,y:6},{t:'gem',x:27,y:16},{t:'gem',x:33,y:8},{t:'gem',x:18,y:20},
+    {t:'crystal',x:9,y:5},{t:'crystal',x:17,y:11},{t:'crystal',x:25,y:7},{t:'crystal',x:32,y:14},
+    {t:'tree',x:2,y:2},{t:'tree',x:39,y:2},{t:'tree',x:2,y:23},{t:'tree',x:39,y:23},
+    {t:'rock',x:11,y:9},{t:'rock',x:22,y:13},{t:'rock',x:30,y:5},
+    {t:'thorns',x:16,y:15},{t:'thorns',x:17,y:15},{t:'thorns',x:28,y:11},
+    {t:'sign',x:5,y:13,msg:'"Beyond this gate: the wound in the sky."'},
+    {t:'portal',x:39,y:13},
+  ]
 }
 ];
 
@@ -509,6 +727,15 @@ function drawAngie(x,y,dir,frame,hitFlash,blocking){
   ctx.translate(px(x),py(y));
   if(dir==='left') ctx.scale(-1,1);
   if(hitFlash>0&&Math.floor(hitFlash/3)%2) ctx.globalAlpha=0.45;
+  // sword swing arc when swinging with sword
+  if(G.hasSword&&G.P.sw>20){
+    const swProg=(40-G.P.sw)/20;
+    const startAng=-0.5, endAng=startAng+swProg*Math.PI;
+    ctx.strokeStyle='#fcd34d';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(8,-22,30,startAng,endAng);ctx.stroke();
+    ctx.strokeStyle='rgba(252,211,77,0.4)';ctx.lineWidth=8;
+    ctx.beginPath();ctx.arc(8,-22,30,startAng,endAng);ctx.stroke();
+  }
   const bob=(frame===1||frame===3)?-1:0;
   const leg=frame===1?2:frame===3?-2:0;
   const arm=frame===1?-2:frame===3?2:0;
@@ -530,6 +757,15 @@ function drawAngie(x,y,dir,frame,hitFlash,blocking){
   ctx.fillRect(cx+5,cy+19+bob+arm,3,11);ctx.fillRect(cx+21,cy+19+bob-arm,3,11);
   ctx.fillStyle='#6d28d9';
   ctx.fillRect(cx+2,cy+18+bob+arm,3,10);ctx.fillRect(cx+24,cy+18+bob-arm,3,10);
+  // sword on hip when not swinging
+  if(G.hasSword&&G.P.sw<=20){
+    ctx.fillStyle='#cbd5e1';
+    ctx.fillRect(cx-2,cy+22,2,12);
+    ctx.fillStyle='#78350f';
+    ctx.fillRect(cx-2,cy+34,3,3);
+    ctx.fillStyle='#fcd34d';
+    ctx.fillRect(cx-3,cy+33,4,1);
+  }
   // shield effect — kite-shaped shield with rim and star emblem
   if(blocking){
     const sx=cx+26, sy=cy+22;
@@ -1153,7 +1389,12 @@ function showOverlay(html){
 function hideOverlay(){document.getElementById('overlay').style.display='none';}
 
 function updateHUD(){
-  document.getElementById('hlvl').textContent=G.level;
+  const L=LEVELS[G.level-1];
+  const ch=L&&L.chapter?L.chapter:2;
+  document.getElementById('hch').textContent=ch;
+  // display level within its chapter
+  const lvlInChapter=ch===3?G.level-3:G.level;
+  document.getElementById('hlvl').textContent=lvlInChapter;
   document.getElementById('hgems').textContent=G.gems+'/'+G.gemsNeeded;
   document.getElementById('hstars').textContent=G.stars;
   document.getElementById('hquest').textContent=G.questText;
@@ -1303,6 +1544,8 @@ function spawnBoss(){
     defeated:false,
     phase:BD.phase||1,
     shockwaves:[],
+    voidZones:[],
+    clones:[],
   };
   G.phase='boss';
   G.projectiles=[];
@@ -1320,6 +1563,23 @@ function updateBoss(){
   if(!B||B.defeated) return;
   B.attackTimer++;
   if(B.hitFlash>0) B.hitFlash--;
+
+  // always tick existing shockwaves/voidZones so they don't freeze during stun
+  if(B.shockwaves) B.shockwaves=B.shockwaves.filter(sw=>{sw.radius+=sw.speed;return sw.radius<sw.maxRadius;});
+  if(B.voidZones) B.voidZones=B.voidZones.filter(vz=>{
+    vz.life--;
+    if(vz.life<=0&&!vz.exploded){
+      vz.exploded=true;
+      spawnParticles(vz.x,vz.y,'#7c3aed',16);
+      for(let i=0;i<6;i++){
+        const a=(i/6)*Math.PI*2;
+        G.projectiles.push({x:vz.x,y:vz.y,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,type:'wave',r:6,life:120,fromBoss:true});
+      }
+      return false;
+    }
+    return vz.life>0;
+  });
+
   if(B.stunTimer>0){B.stunTimer--;return;}
 
   const ph=B.phases[B.currentPhase-1];
@@ -1340,11 +1600,20 @@ function updateBoss(){
   if(nbx>40&&nbx<L.size.w*T-40) B.px=nbx;
   if(nby>40&&nby<L.size.h*T-40) B.py=nby;
 
-  // update shockwaves
-  B.shockwaves=B.shockwaves.filter(sw=>{
-    sw.radius+=sw.speed;
-    return sw.radius<sw.maxRadius;
-  });
+  // update clones (Mirror Twin) — drift toward random targets
+  if(B.clones){
+    for(const c of B.clones){
+      if(c.moveTimer<=0){
+        const ang=Math.random()*Math.PI*2;
+        c.moveDir={x:Math.cos(ang)*ph.speed*0.7,y:Math.sin(ang)*ph.speed*0.7};
+        c.moveTimer=40+Math.random()*40;
+      }
+      c.moveTimer--;
+      const cnbx=c.px+c.moveDir.x, cnby=c.py+c.moveDir.y;
+      if(cnbx>40&&cnbx<L.size.w*T-40) c.px=cnbx;
+      if(cnby>40&&cnby<L.size.h*T-40) c.py=cnby;
+    }
+  }
 
   // attack
   if(B.attackTimer>=ph.shootRate){
@@ -1438,6 +1707,64 @@ function fireAttack(boss,pattern,P){
     for(let i=0;i<count;i++){
       const a=(i/count)*Math.PI*2;
       G.projectiles.push({x:boss.px,y:boss.py,vx:Math.cos(a)*spd*1.1,vy:Math.sin(a)*spd*1.1,type:'slam',r:7,life:200,fromBoss:true});
+    }
+  } else if(pattern==='teleport'){
+    // Astral Devourer — drop void zone, teleport near player, fire spread
+    boss.voidZones=boss.voidZones||[];
+    boss.voidZones.push({x:boss.px,y:boss.py,life:60+boss.currentPhase*15,maxLife:60+boss.currentPhase*15,r:38,exploded:false});
+    const teleAng=Math.random()*Math.PI*2;
+    const teleDist=120+Math.random()*60;
+    const L=LEVELS[G.level-1];
+    boss.px=Math.max(60,Math.min(L.size.w*T-60,P.x+Math.cos(teleAng)*teleDist));
+    boss.py=Math.max(60,Math.min(L.size.h*T-60,P.y+Math.sin(teleAng)*teleDist));
+    spawnParticles(boss.px,boss.py-20,'#a78bfa',12);
+    // fire 3-way spread after teleport
+    const dx2=P.x-boss.px, dy2=P.y-boss.py;
+    const ang2=Math.atan2(dy2,dx2);
+    for(let s=-1;s<=1;s++){
+      const a=ang2+s*.25;
+      G.projectiles.push({x:boss.px,y:boss.py,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,type:'wave',r:6,life:180,fromBoss:true});
+    }
+  } else if(pattern==='reflect'){
+    // Mirror Twin solo — mirror barrage (5 projectiles in tight spread)
+    for(let i=-2;i<=2;i++){
+      const a=ang+i*0.18;
+      G.projectiles.push({x:boss.px,y:boss.py,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,type:'wave',r:6,life:180,fromBoss:true});
+    }
+  } else if(pattern==='split2'||pattern==='split3'){
+    // Mirror Twin — spawn clones if not yet, fire from all
+    boss.clones=boss.clones||[];
+    const wantClones=pattern==='split2'?1:2;
+    while(boss.clones.length<wantClones){
+      const cAng=Math.random()*Math.PI*2;
+      boss.clones.push({
+        px:boss.px+Math.cos(cAng)*80,
+        py:boss.py+Math.sin(cAng)*80,
+        moveDir:{x:0,y:0},moveTimer:0
+      });
+    }
+    // fire from boss + each clone
+    const positions=[{x:boss.px,y:boss.py},...boss.clones.map(c=>({x:c.px,y:c.py}))];
+    for(const pos of positions){
+      const cdx=P.x-pos.x, cdy=P.y-pos.y;
+      const cang=Math.atan2(cdy,cdx);
+      G.projectiles.push({x:pos.x,y:pos.y,vx:Math.cos(cang)*spd,vy:Math.sin(cang)*spd,type:'wave',r:6,life:180,fromBoss:true});
+    }
+  } else if(pattern==='shockwave'){
+    // Starfall Empress phase 1 — shockwaves like Root Warden
+    boss.shockwaves=boss.shockwaves||[];
+    const swCount=2;
+    for(let i=0;i<swCount;i++){
+      boss.shockwaves.push({
+        x:boss.px,y:boss.py,
+        radius:0,maxRadius:170,
+        speed:3,hit:false
+      });
+    }
+    // also fire 3-way spread
+    for(let s=-1;s<=1;s++){
+      const a=ang+s*.3;
+      G.projectiles.push({x:boss.px,y:boss.py,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,type:'wave',r:6,life:180,fromBoss:true});
     }
   }
 }
@@ -1579,7 +1906,7 @@ function doAct(){
     showOverlay(`
       <h2>Angie's Journal</h2>
       <div class="story">
-        <b>Chapter 2, Level ${G.level}: ${LEVELS[G.level-1].name}</b><br>
+        <b>Chapter ${LEVELS[G.level-1].chapter||2}, Level ${LEVELS[G.level-1].chapter===3?G.level-3:G.level}: ${LEVELS[G.level-1].name}</b><br>
         Gems: ${G.gems}/${G.gemsNeeded} · Stars: ${G.stars} · HP: ${G.hp}/${G.maxHp}
       </div>
       <div class="story">${clueTxt}</div>
@@ -1588,17 +1915,31 @@ function doAct(){
       </div>
     `);
   } else {
-    // hand — try to interact with nearest NPC, sign, or attack boss
+    // hand/sword — try to interact with nearest NPC, sign, or attack boss
     if(G.boss&&!G.boss.defeated){
       if(P.sw>0) return; // cooldown — prevent spam
       const B=G.boss;
+      const swordDmg=G.hasSword?7:4;
+      // check main boss
       const dx=B.px-P.x,dy=B.py-P.y;
       const dist=Math.sqrt(dx*dx+dy*dy);
       if(dist<80){
-        hitBoss(4);
+        hitBoss(swordDmg);
         P.sw=40;
         spawnParticles(P.x,P.y-20,'#f87171',8);
         return;
+      }
+      // check clones
+      if(B.clones){
+        for(const c of B.clones){
+          const cd=Math.hypot(c.px-P.x,c.py-P.y);
+          if(cd<80){
+            hitBoss(swordDmg);
+            P.sw=40;
+            spawnParticles(P.x,P.y-20,'#67e8f9',8);
+            return;
+          }
+        }
       }
     }
     doTalk();
@@ -1636,7 +1977,7 @@ function checkPickups(){
   if(portal&&G.boss&&G.boss.defeated){
     const ox=portal.x*T+T/2,oy=portal.y*T+T/2;
     if((P.x-ox)**2+(P.y-oy)**2<30**2){
-      if(G.level<3) levelComplete();
+      if(G.level<LEVELS.length) levelComplete();
       else gameComplete();
     }
   }
@@ -1671,6 +2012,16 @@ function updateProjectiles(){
           spawnParticles(p.x,p.y,'#fcd34d',5);
           return false;
         }
+        // also damage clones
+        if(B.clones){
+          for(const c of B.clones){
+            if((c.px-p.x)**2+(c.py-p.y-B.size/2)**2<(B.size*.6)**2){
+              hitBoss(p.dmg||12);
+              spawnParticles(p.x,p.y,'#67e8f9',5);
+              return false;
+            }
+          }
+        }
       }
     }
     return true;
@@ -1681,6 +2032,8 @@ function updateProjectiles(){
 function loadLevel(n){
   G.level=n;
   const L=LEVELS[n-1];
+  // grant sword for Chapter 3
+  if(L.chapter===3) G.hasSword=true;
   G.gemsNeeded=L.gemsNeeded;
   G.gems=0;
   G.boss=null;
@@ -1709,13 +2062,16 @@ function levelComplete(){
   const L=LEVELS[G.level-1];
   const nL=LEVELS[G.level] || LEVELS[LEVELS.length-1];
   G.stars+=2;save();
+  const curCh=L.chapter||2, nextCh=nL.chapter||2;
+  const chapterTransition=(nextCh>curCh)?`<p style="color:#fcd34d;font-size:14px;letter-spacing:2px">★ CHAPTER ${nextCh} BEGINS ★</p>`:'';
   showOverlay(`
-    <h2>Chapter 2 — Level ${G.level} Complete</h2>
+    <h2>Chapter ${curCh} — Level ${L.chapter===3?G.level-3:G.level} Complete</h2>
     <p style="color:#f9a8d4;font-size:13px">★ ★ ★ ${G.stars} stars collected ★ ★ ★</p>
     <div class="story">
       <b>${L.boss.name}</b> has been defeated.<br>
       ${G.clues.slice(-2).map(c=>'<p class="clue">• '+c+'</p>').join('')}
     </div>
+    ${chapterTransition}
     <p style="color:#fcd34d;font-size:13px">Next: ${nL.name}</p>
     <p>${nL.story.replace(/\n/g,'<br>')}</p>
     <div class="hint"><b>Tip:</b> ${nL.tip}</div>
@@ -1800,7 +2156,7 @@ function openMenu(){
   G.phase='menu';
   showOverlay(`
     <h2>Menu</h2>
-    <p>Chapter 2, Level ${G.level}: ${LEVELS[G.level-1].name}</p>
+    <p>Chapter ${LEVELS[G.level-1].chapter||2}, Level ${LEVELS[G.level-1].chapter===3?G.level-3:G.level}: ${LEVELS[G.level-1].name}</p>
     <p>Gems: ${G.gems}/${G.gemsNeeded} · Stars: ${G.stars} · HP: ${G.hp}/${G.maxHp}</p>
     <div class="ml">
       <button onclick="resumeGame()">Resume</button>
@@ -1921,7 +2277,7 @@ window.startNewGame=function(){
 window.continueGame=function(){
   const sv=loadSave();
   if(!sv){window.startNewGame();return;}
-  G.level=sv.level||1;G.stars=sv.stars||0;G.clues=sv.clues||[];G.hasStaff=sv.hasStaff||false;
+  G.level=sv.level||1;G.stars=sv.stars||0;G.clues=sv.clues||[];G.hasStaff=sv.hasStaff||false;G.hasSword=sv.hasSword||false;
   G.hp=5;G.shieldCharge=0;
   loadLevel(G.level);
 };
@@ -1975,6 +2331,33 @@ function update(){
             updateHUD();
             sw.hit=true;
           }
+        }
+      }
+    }
+
+    // void zone damage (Astral Devourer)
+    if(G.boss&&G.boss.voidZones){
+      for(const vz of G.boss.voidZones){
+        const d=Math.hypot(P.x-vz.x,P.y-vz.y);
+        if(d<vz.r&&P.hf<=0&&!P.blocking){
+          // damage when standing in void zone (reduced)
+          if(G.tick%30===0){
+            G.hp--;P.hf=40;flashDamage();
+            if(G.hp<=0){playerDied();return;}
+            updateHUD();
+          }
+        }
+      }
+    }
+
+    // clone contact damage (Mirror Twin)
+    if(G.boss&&G.boss.clones){
+      for(const c of G.boss.clones){
+        const d=Math.hypot(P.x-c.px,P.y-c.py);
+        if(d<G.boss.size*0.6&&P.hf<=0&&!P.blocking){
+          G.hp--;P.hf=50;flashDamage();
+          if(G.hp<=0){playerDied();return;}
+          updateHUD();
         }
       }
     }
@@ -2051,9 +2434,38 @@ function render(){
   }
   if(G.boss&&!G.boss.defeated){
     drawList.push({y:G.boss.py,draw:()=>drawBoss(G.boss,G.tick)});
+    // clones share boss sprite
+    if(G.boss.clones){
+      for(const c of G.boss.clones){
+        drawList.push({y:c.py,draw:()=>{
+          ctx.globalAlpha=0.7;
+          drawBoss({...G.boss,px:c.px,py:c.py,hitFlash:0},G.tick);
+          ctx.globalAlpha=1;
+        }});
+      }
+    }
   }
   drawList.sort((a,b)=>a.y-b.y);
   for(const d of drawList) d.draw();
+
+  // void zones (drawn on top of ground)
+  if(G.boss&&G.boss.voidZones){
+    for(const vz of G.boss.voidZones){
+      const prog=vz.life/vz.maxLife;
+      const danger=1-prog;
+      ctx.fillStyle=`rgba(124,58,237,${0.25+danger*0.35})`;
+      ctx.beginPath();ctx.arc(vz.x,vz.y,vz.r,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle=`rgba(196,181,253,${0.5+danger*0.5})`;
+      ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(vz.x,vz.y,vz.r,0,Math.PI*2);ctx.stroke();
+      // pulsing inner ring as it's about to explode
+      if(danger>0.5){
+        const pulse=Math.sin(G.tick*0.3)*4;
+        ctx.strokeStyle=`rgba(244,114,182,${danger})`;
+        ctx.beginPath();ctx.arc(vz.x,vz.y,vz.r*0.6+pulse,0,Math.PI*2);ctx.stroke();
+      }
+    }
+  }
 
   // shockwaves
   if(G.boss&&G.boss.shockwaves){
