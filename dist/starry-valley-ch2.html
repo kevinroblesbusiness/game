@@ -1522,6 +1522,12 @@ function retryLevel(){
 }
 window.retryLevel=retryLevel;
 
+function restartLevel(){
+  if(G.phase!=='play'&&G.phase!=='boss') return;
+  retryLevel();
+  toast('Level restarted');
+}
+
 // ─── MENU ───────────────────────────────────────────────────────────────────
 function openMenu(){
   const prev=G.phase;
@@ -1825,7 +1831,15 @@ document.addEventListener('keydown',e=>{
   G.keys[e.key]=true;
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
   if(e.key==='t'||e.key==='T') doTalk();
-  if(e.key===' '||e.key==='Enter'){doAct();e.preventDefault();}
+  if(e.key==='r'||e.key==='R'){restartLevel();e.preventDefault();return;}
+  if(e.key===' '||e.key==='Enter'){
+    if(G.phase==='cutscene'){
+      const btn=document.querySelector('#dlg-opts .dopt');
+      if(btn) btn.click();
+      e.preventDefault();return;
+    }
+    doAct();e.preventDefault();
+  }
   if(e.key==='1') selectTool('hand');
   if(e.key==='2') selectTool('shield');
   if(e.key==='3') selectTool('crystal');
