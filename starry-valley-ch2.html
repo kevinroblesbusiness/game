@@ -188,6 +188,7 @@ const G={
   questText:'',
   cutscene:null,
   bossIntroShown:false,
+  cat:{x:0,y:0,vx:0,vy:0,dir:'right',animFrame:0,animTick:0},
 };
 
 // ─── LEVEL DATA ─────────────────────────────────────────────────────────────
@@ -603,6 +604,81 @@ function drawKevin(x,y,frame){
   ctx.fillStyle='#1e1b4b';ctx.fillRect(cx+9,cy+11+bob,2,2);ctx.fillRect(cx+17,cy+11+bob,2,2);
   ctx.fillStyle='#fff';ctx.fillRect(cx+10,cy+11+bob,1,1);ctx.fillRect(cx+18,cy+11+bob,1,1);
   ctx.fillStyle='#fbbf24';ctx.fillRect(cx+12,cy+15+bob,6,1);
+  ctx.restore();
+}
+
+function updateCat(){
+  const C=G.cat, P=G.P;
+  const dx=P.x-C.x, dy=P.y-C.y;
+  const dist=Math.hypot(dx,dy);
+  // follow at distance ~50, run when far
+  if(dist>50){
+    const speed=dist>120?2.4:1.4;
+    C.vx+=(dx/dist*speed-C.vx)*0.15;
+    C.vy+=(dy/dist*speed-C.vy)*0.15;
+  } else {
+    C.vx*=0.85;C.vy*=0.85;
+  }
+  C.x+=C.vx;C.y+=C.vy;
+  // direction
+  if(Math.abs(C.vx)>0.3) C.dir=C.vx>0?'right':'left';
+  // walk animation
+  const moving=Math.hypot(C.vx,C.vy)>0.4;
+  if(moving){
+    C.animTick++;
+    if(C.animTick>=8){C.animTick=0;C.animFrame=(C.animFrame+1)%4;}
+  } else {
+    C.animFrame=0;C.animTick=0;
+  }
+  // keep in level bounds
+  const L=LEVELS[G.level-1];
+  C.x=Math.max(20,Math.min(L.size.w*T-20,C.x));
+  C.y=Math.max(36,Math.min(L.size.h*T-20,C.y));
+}
+
+function drawCat(x,y,dir,frame){
+  ctx.save();
+  ctx.translate(px(x),py(y));
+  if(dir==='left') ctx.scale(-1,1);
+  const bob=(frame===1||frame===3)?-1:0;
+  const leg=frame===1?1:frame===3?-1:0;
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,.3)';
+  ctx.beginPath();ctx.ellipse(0,0,9,2,0,0,Math.PI*2);ctx.fill();
+  // tail (curved up, wagging)
+  const tailWag=Math.sin(G.tick*0.1)*1.5;
+  ctx.fillStyle='#1f2937';
+  ctx.fillRect(-11,-9+bob+tailWag,2,3);
+  ctx.fillRect(-12,-12+bob+tailWag,2,3);
+  ctx.fillRect(-11,-15+bob+tailWag,2,2);
+  // body
+  ctx.fillStyle='#1f2937';
+  ctx.fillRect(-9,-9+bob,14,7);
+  // belly stripe
+  ctx.fillStyle='#374151';
+  ctx.fillRect(-7,-7+bob,10,2);
+  // legs
+  ctx.fillStyle='#111827';
+  ctx.fillRect(-7+leg,-3+bob,2,4);
+  ctx.fillRect(-3-leg,-3+bob,2,4);
+  ctx.fillRect(1+leg,-3+bob,2,4);
+  ctx.fillRect(4-leg,-3+bob,2,4);
+  // head
+  ctx.fillStyle='#1f2937';
+  ctx.fillRect(3,-13+bob,8,7);
+  // ears (triangles via stacked rects)
+  ctx.fillRect(3,-15+bob,2,2);
+  ctx.fillRect(9,-15+bob,2,2);
+  ctx.fillStyle='#fbbf24';
+  ctx.fillRect(4,-14+bob,1,1);
+  ctx.fillRect(10,-14+bob,1,1);
+  // eyes
+  ctx.fillStyle='#fcd34d';
+  ctx.fillRect(5,-10+bob,1,1);
+  ctx.fillRect(8,-10+bob,1,1);
+  // nose
+  ctx.fillStyle='#f9a8d4';
+  ctx.fillRect(7,-8+bob,1,1);
   ctx.restore();
 }
 
@@ -1465,6 +1541,8 @@ function loadLevel(n){
   G.P.x=L.startPos.x*T+T/2;
   G.P.y=L.startPos.y*T+T/2;
   G.P.dir='right';G.P.moving=false;G.P.hf=0;G.P.sw=0;G.P.blocking=false;G.P.blockTimer=0;
+  G.cat.x=G.P.x-50;G.cat.y=G.P.y+10;
+  G.cat.vx=0;G.cat.vy=0;G.cat.dir='right';G.cat.animFrame=0;G.cat.animTick=0;
   G.cam.x=G.P.x-VW/2;
   G.cam.y=G.P.y-VH*0.65;
   G.phase='play';
@@ -1748,6 +1826,9 @@ function update(){
         }
       }
     }
+
+    // cat companion follow
+    updateCat();
   }
 
   G.particles=G.particles.filter(p=>{
@@ -1810,6 +1891,7 @@ function render(){
     const P=G.P;
     drawAngie(P.x,P.y,P.dir,P.moving?P.wf:0,P.hf,P.blocking);
   }});
+  drawList.push({y:G.cat.y,draw:()=>drawCat(G.cat.x,G.cat.y,G.cat.dir,G.cat.animFrame)});
   if(G.boss&&!G.boss.defeated){
     drawList.push({y:G.boss.py,draw:()=>drawBoss(G.boss,G.tick)});
   }
