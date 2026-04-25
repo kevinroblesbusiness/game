@@ -252,7 +252,7 @@ const LEVELS=[
   boss:{
     id:'root_warden',
     name:'ROOT WARDEN',
-    hp:80, maxHp:80,
+    hp:120, maxHp:120,
     phase:1,
     x:30,y:11,
     color:'#1a4a0a',
@@ -1296,19 +1296,20 @@ function doAct(){
     }
   } else if(G.tool==='crystal'){
     if(!G.hasStaff){toast('You don\'t have the Crystal Staff yet. Defeat the Root Warden!');return;}
+    if(P.sw>0) return; // cooldown — prevent spam
     // fire star bolt toward boss
     if(G.boss&&!G.boss.defeated){
       const B=G.boss;
       const dx=B.px-P.x,dy=B.py-P.y;
       const d=Math.sqrt(dx*dx+dy*dy);
       const spd=6;
-      G.projectiles.push({x:P.x,y:P.y,vx:dx/d*spd,vy:dy/d*spd,type:'star',life:120,fromBoss:false,dmg:12});
-      P.sw=12;
+      G.projectiles.push({x:P.x,y:P.y,vx:dx/d*spd,vy:dy/d*spd,type:'star',life:120,fromBoss:false,dmg:10});
+      P.sw=35;
       spawnParticles(P.x,P.y-20,'#a78bfa',5);
     } else if(G.phase==='play'){
       // in non-boss: heal slightly
       const p=G.P;
-      p.sw=12;
+      p.sw=35;
       spawnParticles(p.x,p.y-20,'#a78bfa',8);
       toast('Crystal staff pulses...');
     }
@@ -1328,12 +1329,13 @@ function doAct(){
   } else {
     // hand — try to interact with nearest NPC, sign, or attack boss
     if(G.boss&&!G.boss.defeated){
+      if(P.sw>0) return; // cooldown — prevent spam
       const B=G.boss;
       const dx=B.px-P.x,dy=B.py-P.y;
       const dist=Math.sqrt(dx*dx+dy*dy);
       if(dist<80){
-        hitBoss(6);
-        P.sw=15;
+        hitBoss(4);
+        P.sw=40;
         spawnParticles(P.x,P.y-20,'#f87171',8);
         return;
       }
