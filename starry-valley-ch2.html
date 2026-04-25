@@ -2139,8 +2139,22 @@ function gameComplete(){
 window.newGame=function(){clearSave();location.reload();};
 
 function retryLevel(){
+  // soft restart — preserve gem progress (checkpoint)
+  const savedCollected=G.objs.map(o=>({collected:!!o.collected,defeated:!!o.defeated}));
+  const savedGems=G.gems;
   G.hp=G.maxHp;
   loadLevel(G.level);
+  G.gems=savedGems;
+  for(let i=0;i<G.objs.length&&i<savedCollected.length;i++){
+    G.objs[i].collected=savedCollected[i].collected;
+    G.objs[i].defeated=savedCollected[i].defeated;
+  }
+  // if boss was triggered, respawn immediately
+  if(G.gems>=G.gemsNeeded){
+    G.bossIntroShown=true;
+    setTimeout(spawnBoss,400);
+  }
+  updateHUD();
 }
 window.retryLevel=retryLevel;
 
