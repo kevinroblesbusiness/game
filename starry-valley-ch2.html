@@ -2098,12 +2098,12 @@ function gameComplete(){
   clearSave();
   showOverlay(`
     <h1>THE END</h1>
-    <p class="sub">chapter 2 complete</p>
+    <p class="sub">chapters two &amp; three complete</p>
     <div class="art"><canvas id="end-art" width="100" height="80"></canvas></div>
-    <p>The Hollow King found peace.<br>The valley breathes again.</p>
-    <p style="color:#fcd34d">"Remember me, child. Just... once in a while."</p>
-    <p>Angie and Kevin walked home under more stars than they had ever seen before.</p>
-    <p style="color:#c4b5fd">They didn't say anything for a long time.<br>They didn't need to.</p>
+    <p>The wound in the sky closed. The fallen stars returned home.</p>
+    <p style="color:#fcd34d">"You were... kinder than I expected..."</p>
+    <p>Angie sheathed her sword. Kevin was waiting at the door, like he said.<br>The cat curled on her boots.</p>
+    <p style="color:#c4b5fd">The valley breathes again.<br>They walked home together under a sky that finally held still.</p>
     <div class="story">
       <b>Final stats:</b> ${G.stars} stars · ${G.clues.length} clues found
     </div>
@@ -2225,15 +2225,15 @@ function showTitle(){
   const hasSave=sv&&sv.level;
   showOverlay(`
     <h1>STARRY VALLEY</h1>
-    <p class="sub">chapter two — the long way home</p>
+    <p class="sub">chapters two &amp; three — the long way home / stars that fell</p>
     <div class="art"><canvas id="title-art" width="120" height="90"></canvas></div>
-    <p>The blight is spreading. Ancient things are waking.<br>Angie and Kevin must go deeper into the valley's dark heart<br>and face what has been forgotten there.</p>
+    <p>The blight is spreading. Ancient things are waking.<br>Then the sky tore open, and stars began to fall.<br>Angie, Kevin, and one stubborn cat must walk into the dark.</p>
     <div class="hint">
-      <b>Controls:</b> WASD/arrows to move · T = Talk · Space = Act · 1-4 = Tools · Esc = Menu<br>
+      <b>Controls:</b> WASD/arrows = move · T = Talk · Space/Enter = Act · 1-4 = Tools · R = Restart · Esc = Menu<br>
       <b>Mobile:</b> D-pad bottom-left · TALK/ACT buttons bottom-right
     </div>
     <div class="ml">
-      <button onclick="startNewGame()">★ Start Chapter 2 ★</button>
+      <button onclick="startNewGame()">★ Start New Game ★</button>
       ${hasSave?`<button class="sec" onclick="continueGame()">Continue (Level ${sv.level})</button>`:''}
       <button class="sec" onclick="showHelpScreen()">How to Play</button>
     </div>
