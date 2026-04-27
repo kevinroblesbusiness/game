@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Rooms - Escape the Darkness</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+            color: #fff;
+        }
+        canvas { display: block; }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 18px;
+            z-index: 10;
+        }
+        #victory {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            display: none;
+            z-index: 20;
+            background: rgba(0,0,0,0.8);
+            padding: 40px;
+            border-radius: 10px;
+            border: 2px solid #fff;
+        }
+        #victory h1 { font-size: 48px; margin-bottom: 20px; }
+        #victory p { font-size: 24px; margin-bottom: 20px; }
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 14px;
+            opacity: 0.7;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="status">Room: 1/5 | Find the exit...</div>
+    </div>
+    <div id="victory">
+        <h1>You Escaped!</h1>
+        <p>You found your way through the darkness.</p>
+        <p style="opacity: 0.7; font-size: 16px;">Refresh to play again</p>
+    </div>
+    <div id="instructions">
+        <p><strong>WASD</strong> to move | <strong>Mouse</strong> to look | <strong>Escape</strong> to unlock cursor</p>
+        <p>Something watches in the darkness...</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ============================================
+        // GAME STATE
+        // ============================================
+        const gameState = {
+            currentRoom: 0,
+            escaped: false,
+            tick: 0,
+        };
+
+        // ============================================
+        // SCENE SETUP
+        // ============================================
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x0a0a0a);
+        document.body.appendChild(renderer.domElement);
+
+        // Fog for atmosphere
+        scene.fog = new THREE.Fog(0x0a0a0a, 30, 60);
+
+        // Lighting - dark and moody
+        const ambientLight = new THREE.AmbientLight(0x4a4a6a, 0.3);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xaabbff, 0.25);
+        directionalLight.position.set(20, 30, 20);
+        scene.add(directionalLight);
+
+        // ============================================
+        // PLAYER & CAMERA CONTROLLER
+        // ============================================
+        const player = {
+            position: new THREE.Vector3(0, 0, 0),
+            velocity: new THREE.Vector3(0, 0, 0),
+            speed: 0.2,
+            direction: new THREE.Vector3(0, 0, 0),
+        };
+
+        camera.position.set(0, 1.7, 0);
+        camera.lookAt(0, 1.7, -1);
+
+        const keys = {};
+        const mouse = { x: 0, y: 0, locked: false };
+        let yaw = Math.PI;
+        let pitch = 0;
+
+        // Input handlers
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key === 'Escape') {
+                document.exitPointerLock?.();
+                mouse.locked = false;
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        document.addEventListener('click', () => {
+            document.body.requestPointerLock?.();
+            mouse.locked = true;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!mouse.locked) return;
+            const sensitivity = 0.005;
+            yaw -= e.movementX * sensitivity;
+            pitch -= e.movementY * sensitivity;
+            pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ============================================
+        // ROOM BUILDER
+        // ============================================
+        const rooms = [];
+
+        function createRoom1() {
+            const room = new THREE.Group();
+            room.name = 'entrance';
+
+            // Blue arch entrance
+            const archGeometry = new THREE.CylinderGeometry(15, 15, 8, 32, 32, true, 0, Math.PI);
+            const archMaterial = new THREE.MeshStandardMaterial({
+                color: 0x3366cc,
+                emissive: 0x1144aa,
+                roughness: 0.4,
+                metalness: 0.1,
+            });
+            const arch = new THREE.Mesh(archGeometry, archMaterial);
+            arch.position.set(0, 10, -20);
+            room.add(arch);
+
+            // Water floor
+            const floorGeometry = new THREE.PlaneGeometry(40, 40);
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x223366,
+                metalness: 0.8,
+                roughness: 0.2,
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            room.add(floor);
+
+            // Walls (invisible boundary)
+            const wallGeo = new THREE.BoxGeometry(40, 30, 40);
+            const wallMat = new THREE.MeshStandardMaterial({ visible: false });
+            const wallCollider = new THREE.Mesh(wallGeo, wallMat);
+            wallCollider.userData.isWall = true;
+            wallCollider.position.y = 15;
+            room.add(wallCollider);
+
+            // Point light
+            const light1 = new THREE.PointLight(0x6699ff, 0.8, 40);
+            light1.position.set(0, 15, -15);
+            room.add(light1);
+
+            // Portal to next room
+            const portalGeo = new THREE.CylinderGeometry(2, 2, 0.1, 32);
+            const portalMat = new THREE.MeshStandardMaterial({
+                color: 0xffaa00,
+                emissive: 0xffaa00,
+                metalness: 1.0,
+            });
+            const portal = new THREE.Mesh(portalGeo, portalMat);
+            portal.position.set(0, 0.5, -35);
+            portal.userData.isPortal = true;
+            portal.userData.nextRoom = 1;
+            room.add(portal);
+
+            room.bounds = { x: [-20, 20], z: [-38, 0], y: [0, 25] };
+            return room;
+        }
+
+        function createRoom2() {
+            const room = new THREE.Group();
+            room.name = 'pink_nested';
+
+            // Nested pink arches
+            const colors = [0xff66cc, 0xff99dd, 0xffaaee];
+            for (let i = 0; i < 3; i++) {
+                const archGeo = new THREE.CylinderGeometry(12 - i * 3, 12 - i * 3, 6, 32, 32, true, 0, Math.PI);
+                const archMat = new THREE.MeshStandardMaterial({
+                    color: colors[i],
+                    emissive: colors[i],
+                    emissiveIntensity: 0.3,
+                    roughness: 0.5,
+                });
+                const arch = new THREE.Mesh(archGeo, archMat);
+                arch.position.set(0, 10, -50 - i * 5);
+                room.add(arch);
+            }
+
+            // Reflective floor
+            const floorGeo = new THREE.PlaneGeometry(40, 40);
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: 0xdd6699,
+                metalness: 0.9,
+                roughness: 0.1,
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.z = -50;
+            room.add(floor);
+
+            // Walls
+            const wallGeo = new THREE.BoxGeometry(40, 30, 40);
+            const wallMat = new THREE.MeshStandardMaterial({ visible: false });
+            const wallCollider = new THREE.Mesh(wallGeo, wallMat);
+            wallCollider.userData.isWall = true;
+            wallCollider.position.set(0, 15, -50);
+            room.add(wallCollider);
+
+            // Lights
+            const light1 = new THREE.PointLight(0xff99dd, 0.7, 40);
+            light1.position.set(-10, 15, -50);
+            room.add(light1);
+            const light2 = new THREE.PointLight(0xff99dd, 0.7, 40);
+            light2.position.set(10, 15, -50);
+            room.add(light2);
+
+            // Portal
+            const portalGeo = new THREE.CylinderGeometry(2, 2, 0.1, 32);
+            const portalMat = new THREE.MeshStandardMaterial({
+                color: 0xffaa00,
+                emissive: 0xffaa00,
+                metalness: 1.0,
+            });
+            const portal = new THREE.Mesh(portalGeo, portalMat);
+            portal.position.set(0, 0.5, -75);
+            portal.userData.isPortal = true;
+            portal.userData.nextRoom = 2;
+            room.add(portal);
+
+            room.bounds = { x: [-20, 20], z: [-75, -35], y: [0, 25] };
+            return room;
+        }
+
+        function createRoom3() {
+            const room = new THREE.Group();
+            room.name = 'green_tunnel';
+
+            // Green tunnel
+            const tunnelGeo = new THREE.CylinderGeometry(8, 8, 40, 32, 32, true, 0, Math.PI);
+            const tunnelMat = new THREE.MeshStandardMaterial({
+                color: 0x33dd66,
+                emissive: 0x11aa33,
+                emissiveIntensity: 0.2,
+                roughness: 0.6,
+            });
+            const tunnel = new THREE.Mesh(tunnelGeo, tunnelMat);
+            tunnel.position.z = -95;
+            tunnel.rotation.z = Math.PI / 2;
+            room.add(tunnel);
+
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(40, 40);
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: 0x1a6633,
+                roughness: 0.8,
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.z = -95;
+            room.add(floor);
+
+            // Walls
+            const wallGeo = new THREE.BoxGeometry(40, 30, 40);
+            const wallMat = new THREE.MeshStandardMaterial({ visible: false });
+            const wallCollider = new THREE.Mesh(wallGeo, wallMat);
+            wallCollider.userData.isWall = true;
+            wallCollider.position.set(0, 15, -95);
+            room.add(wallCollider);
+
+            // Light
+            const light1 = new THREE.PointLight(0x33dd66, 0.6, 35);
+            light1.position.set(0, 10, -95);
+            room.add(light1);
+
+            // Portal
+            const portalGeo = new THREE.CylinderGeometry(2, 2, 0.1, 32);
+            const portalMat = new THREE.MeshStandardMaterial({
+                color: 0xffaa00,
+                emissive: 0xffaa00,
+                metalness: 1.0,
+            });
+            const portal = new THREE.Mesh(portalGeo, portalMat);
+            portal.position.set(0, 0.5, -130);
+            portal.userData.isPortal = true;
+            portal.userData.nextRoom = 3;
+            room.add(portal);
+
+            room.bounds = { x: [-20, 20], z: [-130, -75], y: [0, 25] };
+            return room;
+        }
+
+        function createRoom4() {
+            const room = new THREE.Group();
+            room.name = 'yellow_void';
+
+            // Yellow void - open space
+            const floorGeo = new THREE.PlaneGeometry(50, 50);
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: 0xccaa00,
+                emissive: 0x996600,
+                roughness: 0.9,
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.z = -160;
+            room.add(floor);
+
+            // Walls
+            const wallGeo = new THREE.BoxGeometry(50, 30, 50);
+            const wallMat = new THREE.MeshStandardMaterial({ visible: false });
+            const wallCollider = new THREE.Mesh(wallGeo, wallMat);
+            wallCollider.userData.isWall = true;
+            wallCollider.position.set(0, 15, -160);
+            room.add(wallCollider);
+
+            // Lights
+            const light1 = new THREE.PointLight(0xffdd66, 0.8, 50);
+            light1.position.set(-15, 15, -160);
+            room.add(light1);
+            const light2 = new THREE.PointLight(0xffdd66, 0.8, 50);
+            light2.position.set(15, 15, -160);
+            room.add(light2);
+
+            // Portal
+            const portalGeo = new THREE.CylinderGeometry(2, 2, 0.1, 32);
+            const portalMat = new THREE.MeshStandardMaterial({
+                color: 0xffaa00,
+                emissive: 0xffaa00,
+                metalness: 1.0,
+            });
+            const portal = new THREE.Mesh(portalGeo, portalMat);
+            portal.position.set(0, 0.5, -195);
+            portal.userData.isPortal = true;
+            portal.userData.nextRoom = 4;
+            room.add(portal);
+
+            room.bounds = { x: [-25, 25], z: [-195, -135], y: [0, 25] };
+            return room;
+        }
+
+        function createRoom5() {
+            const room = new THREE.Group();
+            room.name = 'escape';
+
+            // Exit chamber - white/silver
+            const floorGeo = new THREE.PlaneGeometry(30, 30);
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: 0xeeeeee,
+                emissive: 0xaaaaaa,
+                metalness: 0.8,
+                roughness: 0.3,
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.z = -215;
+            room.add(floor);
+
+            // Walls
+            const wallGeo = new THREE.BoxGeometry(30, 30, 30);
+            const wallMat = new THREE.MeshStandardMaterial({ visible: false });
+            const wallCollider = new THREE.Mesh(wallGeo, wallMat);
+            wallCollider.userData.isWall = true;
+            wallCollider.position.set(0, 15, -215);
+            room.add(wallCollider);
+
+            // Bright light
+            const light1 = new THREE.PointLight(0xffffff, 1.5, 60);
+            light1.position.set(0, 20, -215);
+            room.add(light1);
+
+            // Exit portal - big and glowing
+            const exitPortalGeo = new THREE.CylinderGeometry(3, 3, 0.2, 32);
+            const exitPortalMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: 0xffffff,
+                metalness: 1.0,
+                emissiveIntensity: 1.0,
+            });
+            const exitPortal = new THREE.Mesh(exitPortalGeo, exitPortalMat);
+            exitPortal.position.set(0, 0.5, -215);
+            exitPortal.userData.isExitPortal = true;
+            room.add(exitPortal);
+
+            room.bounds = { x: [-15, 15], z: [-230, -200], y: [0, 25] };
+            return room;
+        }
+
+        // Create all rooms
+        rooms.push(createRoom1());
+        rooms.push(createRoom2());
+        rooms.push(createRoom3());
+        rooms.push(createRoom4());
+        rooms.push(createRoom5());
+
+        // Add rooms to scene (only current and adjacent rooms visible)
+        function updateRoomVisibility() {
+            rooms.forEach((room, idx) => {
+                room.visible = Math.abs(idx - gameState.currentRoom) <= 1;
+            });
+        }
+
+        rooms.forEach(room => scene.add(room));
+        updateRoomVisibility();
+
+        // ============================================
+        // CREATURES
+        // ============================================
+        const creatures = [];
+
+        function createCreature(x, z, room) {
+            const group = new THREE.Group();
+
+            // Body - simple geometric shape
+            const bodyGeo = new THREE.CapsuleGeometry(0.6, 2, 4, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: 0x1a1a2e,
+                emissive: 0x0f0f1a,
+                roughness: 0.9,
+                metalness: 0.0,
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            group.add(body);
+
+            // Eyes - glowing
+            const eyeGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            const eyeMat = new THREE.MeshStandardMaterial({
+                color: 0xff3333,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.8,
+            });
+            const eye1 = new THREE.Mesh(eyeGeo, eyeMat);
+            eye1.position.set(-0.3, 0.6, 0.5);
+            group.add(eye1);
+            const eye2 = new THREE.Mesh(eyeGeo, eyeMat);
+            eye2.position.set(0.3, 0.6, 0.5);
+            group.add(eye2);
+
+            group.position.set(x, 1, z);
+            group.userData.isCreature = true;
+            group.userData.state = 'idle';
+            group.userData.targetPlayer = false;
+            group.userData.detectionRange = 20;
+            group.userData.approachSpeed = 0.05;
+
+            rooms[room].add(group);
+            return group;
+        }
+
+        // Spawn creatures in various rooms
+        creatures.push(createCreature(-10, -10, 0)); // Room 1
+        creatures.push(createCreature(10, -45, 1));  // Room 2
+        creatures.push(createCreature(-8, -90, 2));  // Room 3
+        creatures.push(createCreature(12, -150, 3)); // Room 4
+        creatures.push(createCreature(-12, -155, 3)); // Room 4
+
+        // ============================================
+        // COLLISION & MOVEMENT
+        // ============================================
+        const boundsCollider = new THREE.Sphere(new THREE.Vector3(), 1.5);
+
+        function updatePlayerMovement() {
+            const currentBounds = rooms[gameState.currentRoom].bounds;
+
+            // Calculate movement input
+            let moveX = 0, moveZ = 0;
+            const forward = new THREE.Vector3(
+                Math.sin(yaw),
+                0,
+                -Math.cos(yaw)
+            );
+            const right = new THREE.Vector3(
+                Math.cos(yaw),
+                0,
+                Math.sin(yaw)
+            );
+
+            if (keys['w'] || keys['arrowup']) { moveX += forward.x; moveZ += forward.z; }
+            if (keys['s'] || keys['arrowdown']) { moveX -= forward.x; moveZ -= forward.z; }
+            if (keys['a']) { moveX -= right.x; moveZ -= right.z; }
+            if (keys['d']) { moveX += right.x; moveZ += right.z; }
+
+            if (moveX !== 0 || moveZ !== 0) {
+                const len = Math.sqrt(moveX * moveX + moveZ * moveZ);
+                moveX /= len; moveZ /= len;
+            }
+
+            player.position.x += moveX * player.speed;
+            player.position.z += moveZ * player.speed;
+
+            // Clamp to bounds
+            player.position.x = Math.max(currentBounds.x[0], Math.min(currentBounds.x[1], player.position.x));
+            player.position.z = Math.max(currentBounds.z[0], Math.min(currentBounds.z[1], player.position.z));
+
+            // Update camera position
+            camera.position.copy(player.position);
+            camera.position.y = 1.7;
+
+            // Update camera direction
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = yaw;
+            camera.rotation.x = pitch;
+        }
+
+        // ============================================
+        // CREATURE AI
+        // ============================================
+        function updateCreatureAI() {
+            creatures.forEach(creature => {
+                const dist = creature.position.distanceTo(player.position);
+
+                if (dist < creature.userData.detectionRange) {
+                    creature.userData.state = 'approach';
+                    creature.userData.targetPlayer = true;
+
+                    const direction = new THREE.Vector3().subVectors(player.position, creature.position).normalize();
+                    creature.position.addScaledVector(direction, creature.userData.approachSpeed);
+
+                    creature.lookAt(player.position);
+                } else {
+                    creature.userData.state = 'idle';
+                    creature.userData.targetPlayer = false;
+
+                    // Gentle idle rotation
+                    creature.rotation.y += 0.01;
+                }
+            });
+        }
+
+        // ============================================
+        // PORTAL INTERACTION
+        // ============================================
+        const raycaster = new THREE.Raycaster();
+        const rayDirection = new THREE.Vector3(0, 0, -1);
+
+        function checkPortalCollision() {
+            raycaster.set(camera.position, rayDirection);
+            const currentRoom = rooms[gameState.currentRoom];
+
+            // Check portals in current room
+            const portals = [];
+            currentRoom.traverse(obj => {
+                if (obj.userData.isPortal || obj.userData.isExitPortal) {
+                    portals.push(obj);
+                }
+            });
+
+            const intersects = raycaster.intersectObjects(portals);
+
+            if (intersects.length > 0) {
+                const portal = intersects[0].object;
+                if (portal.userData.isExitPortal) {
+                    // Player escaped!
+                    gameState.escaped = true;
+                    document.getElementById('victory').style.display = 'block';
+                    return;
+                }
+                if (portal.userData.nextRoom !== undefined) {
+                    gameState.currentRoom = portal.userData.nextRoom;
+                    player.position.set(0, 0, rooms[gameState.currentRoom].bounds.z[0] + 5);
+                    updateRoomVisibility();
+                    updateStatusUI();
+                }
+            }
+        }
+
+        function checkPortalProximity() {
+            const currentRoom = rooms[gameState.currentRoom];
+            const portals = [];
+            currentRoom.traverse(obj => {
+                if (obj.userData.isPortal || obj.userData.isExitPortal) {
+                    portals.push(obj);
+                }
+            });
+
+            portals.forEach(portal => {
+                const dist = camera.position.distanceTo(portal.position);
+                if (dist < 3) {
+                    if (portal.userData.isExitPortal) {
+                        gameState.escaped = true;
+                        document.getElementById('victory').style.display = 'block';
+                    } else if (portal.userData.nextRoom !== undefined) {
+                        gameState.currentRoom = portal.userData.nextRoom;
+                        player.position.set(0, 0, rooms[gameState.currentRoom].bounds.z[0] + 5);
+                        updateRoomVisibility();
+                        updateStatusUI();
+                    }
+                }
+            });
+        }
+
+        // ============================================
+        // UI UPDATE
+        // ============================================
+        function updateStatusUI() {
+            document.getElementById('status').textContent = `Room: ${gameState.currentRoom + 1}/5 | Find the exit...`;
+        }
+
+        // ============================================
+        // MAIN GAME LOOP
+        // ============================================
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (gameState.escaped) {
+                renderer.render(scene, camera);
+                return;
+            }
+
+            gameState.tick++;
+
+            // Update game logic
+            updatePlayerMovement();
+            updateCreatureAI();
+            checkPortalProximity();
+
+            // Render
+            renderer.render(scene, camera);
+        }
+
+        // Start game
+        animate();
+    </script>
+</body>
+</html>
