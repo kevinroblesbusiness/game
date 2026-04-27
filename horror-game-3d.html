@@ -64,12 +64,131 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // ============================================
+        // AUDIO HELPER - Create eerie sounds procedurally
+        // ============================================
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function createAmbientWind() {
+            const osc = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+
+            filter.type = 'lowpass';
+            filter.frequency.value = 200;
+
+            osc.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            osc.frequency.setValueAtTime(40, audioContext.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(30, audioContext.currentTime + 3);
+
+            gainNode.gain.setValueAtTime(0.03, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 3);
+
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + 3);
+        }
+
+        function createWhisper() {
+            const osc = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+
+            filter.type = 'highpass';
+            filter.frequency.value = 1500 + Math.random() * 1000;
+
+            osc.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            osc.frequency.value = 2000 + Math.random() * 800;
+
+            gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.005, audioContext.currentTime + 2);
+
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + 2);
+        }
+
+        function createFootstep() {
+            const osc = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+
+            filter.type = 'lowpass';
+            filter.frequency.value = 300;
+
+            osc.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            osc.frequency.setValueAtTime(150, audioContext.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(80, audioContext.currentTime + 0.15);
+
+            gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0, audioContext.currentTime + 0.15);
+
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + 0.15);
+        }
+
+        function createVictorySound() {
+            const notes = [440, 550, 660, 880];
+            let delay = 0;
+
+            notes.forEach((freq, idx) => {
+                setTimeout(() => {
+                    const osc = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    osc.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    osc.frequency.value = freq;
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0, audioContext.currentTime + 0.3);
+
+                    osc.start(audioContext.currentTime);
+                    osc.stop(audioContext.currentTime + 0.3);
+                }, idx * 150);
+            });
+        }
+
+        function createCreatureVocalization() {
+            const osc = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+
+            filter.type = 'lowpass';
+            filter.frequency.value = 400;
+
+            osc.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            osc.frequency.setValueAtTime(80 + Math.random() * 60, audioContext.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(60 + Math.random() * 40, audioContext.currentTime + 1);
+
+            gainNode.gain.setValueAtTime(0.02, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0, audioContext.currentTime + 1);
+
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + 1);
+        }
+
+        // Start ambient background (wind, whispers)
+        setInterval(createAmbientWind, 4000);
+        setInterval(createWhisper, 3000 + Math.random() * 2000);
+
+        // ============================================
         // GAME STATE
         // ============================================
         const gameState = {
             currentRoom: 0,
             escaped: false,
             tick: 0,
+            lastFootstepTime: 0,
         };
 
         // ============================================
@@ -83,7 +202,49 @@
         document.body.appendChild(renderer.domElement);
 
         // Fog for atmosphere
-        scene.fog = new THREE.Fog(0x0a0a0a, 30, 60);
+        scene.fog = new THREE.Fog(0x0a0a0a, 25, 55);
+
+        // ============================================
+        // PARTICLE SYSTEM - Floating fog/dust
+        // ============================================
+        const particles = [];
+
+        function createParticles() {
+            const particleCount = 200;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 150;
+                positions[i * 3 + 1] = Math.random() * 25;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 250;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const material = new THREE.PointsMaterial({
+                color: 0x6688aa,
+                size: 0.5,
+                opacity: 0.15,
+                sizeAttenuation: true,
+                transparent: true,
+            });
+
+            const points = new THREE.Points(geometry, material);
+            scene.add(points);
+
+            // Animate particles
+            setInterval(() => {
+                const pos = geometry.attributes.position.array;
+                for (let i = 0; i < particleCount; i++) {
+                    pos[i * 3 + 1] += 0.01;
+                    if (pos[i * 3 + 1] > 25) pos[i * 3 + 1] = 0;
+                }
+                geometry.attributes.position.needsUpdate = true;
+            }, 50);
+        }
+
+        createParticles();
 
         // Lighting - dark and moody
         const ambientLight = new THREE.AmbientLight(0x4a4a6a, 0.3);
@@ -448,37 +609,62 @@
         function createCreature(x, z, room) {
             const group = new THREE.Group();
 
-            // Body - simple geometric shape
-            const bodyGeo = new THREE.CapsuleGeometry(0.6, 2, 4, 8);
+            // Body - elongated shadowy shape
+            const bodyGeo = new THREE.CapsuleGeometry(0.7, 2.2, 4, 8);
             const bodyMat = new THREE.MeshStandardMaterial({
-                color: 0x1a1a2e,
-                emissive: 0x0f0f1a,
-                roughness: 0.9,
+                color: 0x0f0f1a,
+                emissive: 0x1a1a33,
+                roughness: 0.95,
                 metalness: 0.0,
             });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             group.add(body);
 
-            // Eyes - glowing
-            const eyeGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            // Head - distinct shape
+            const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
+            const headMat = new THREE.MeshStandardMaterial({
+                color: 0x0a0a15,
+                emissive: 0x151530,
+                roughness: 0.9,
+            });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.3;
+            group.add(head);
+
+            // Eyes - glowing and intense
+            const eyeGeo = new THREE.SphereGeometry(0.25, 16, 16);
             const eyeMat = new THREE.MeshStandardMaterial({
-                color: 0xff3333,
-                emissive: 0xff0000,
-                emissiveIntensity: 0.8,
+                color: 0xff0000,
+                emissive: 0xff3333,
+                emissiveIntensity: 1.0,
             });
             const eye1 = new THREE.Mesh(eyeGeo, eyeMat);
-            eye1.position.set(-0.3, 0.6, 0.5);
+            eye1.position.set(-0.25, 1.5, 0.4);
             group.add(eye1);
             const eye2 = new THREE.Mesh(eyeGeo, eyeMat);
-            eye2.position.set(0.3, 0.6, 0.5);
+            eye2.position.set(0.25, 1.5, 0.4);
             group.add(eye2);
+
+            // Additional glow effect
+            const glowGeo = new THREE.SphereGeometry(0.3, 8, 8);
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: 0xff0000,
+                transparent: true,
+                opacity: 0.2,
+            });
+            const glow1 = new THREE.Mesh(glowGeo, glowMat);
+            glow1.position.set(-0.25, 1.5, 0.4);
+            group.add(glow1);
+            const glow2 = new THREE.Mesh(glowGeo, glowMat);
+            glow2.position.set(0.25, 1.5, 0.4);
+            group.add(glow2);
 
             group.position.set(x, 1, z);
             group.userData.isCreature = true;
             group.userData.state = 'idle';
             group.userData.targetPlayer = false;
-            group.userData.detectionRange = 20;
-            group.userData.approachSpeed = 0.05;
+            group.userData.detectionRange = 22;
+            group.userData.approachSpeed = 0.06;
 
             rooms[room].add(group);
             return group;
@@ -512,10 +698,11 @@
                 Math.sin(yaw)
             );
 
-            if (keys['w'] || keys['arrowup']) { moveX += forward.x; moveZ += forward.z; }
-            if (keys['s'] || keys['arrowdown']) { moveX -= forward.x; moveZ -= forward.z; }
-            if (keys['a']) { moveX -= right.x; moveZ -= right.z; }
-            if (keys['d']) { moveX += right.x; moveZ += right.z; }
+            let isMoving = false;
+            if (keys['w'] || keys['arrowup']) { moveX += forward.x; moveZ += forward.z; isMoving = true; }
+            if (keys['s'] || keys['arrowdown']) { moveX -= forward.x; moveZ -= forward.z; isMoving = true; }
+            if (keys['a']) { moveX -= right.x; moveZ -= right.z; isMoving = true; }
+            if (keys['d']) { moveX += right.x; moveZ += right.z; isMoving = true; }
 
             if (moveX !== 0 || moveZ !== 0) {
                 const len = Math.sqrt(moveX * moveX + moveZ * moveZ);
@@ -524,6 +711,15 @@
 
             player.position.x += moveX * player.speed;
             player.position.z += moveZ * player.speed;
+
+            // Footstep sounds
+            if (isMoving) {
+                const now = gameState.tick;
+                if (now - gameState.lastFootstepTime > 12) {
+                    createFootstep();
+                    gameState.lastFootstepTime = now;
+                }
+            }
 
             // Clamp to bounds
             player.position.x = Math.max(currentBounds.x[0], Math.min(currentBounds.x[1], player.position.x));
@@ -548,12 +744,23 @@
 
                 if (dist < creature.userData.detectionRange) {
                     creature.userData.state = 'approach';
+
+                    // Vocalize on first detection
+                    if (!creature.userData.targetPlayer) {
+                        createCreatureVocalization();
+                    }
+
                     creature.userData.targetPlayer = true;
 
                     const direction = new THREE.Vector3().subVectors(player.position, creature.position).normalize();
                     creature.position.addScaledVector(direction, creature.userData.approachSpeed);
 
                     creature.lookAt(player.position);
+
+                    // Periodic vocalizations
+                    if (Math.random() < 0.01) {
+                        createCreatureVocalization();
+                    }
                 } else {
                     creature.userData.state = 'idle';
                     creature.userData.targetPlayer = false;
@@ -615,6 +822,7 @@
                 if (dist < 3) {
                     if (portal.userData.isExitPortal) {
                         gameState.escaped = true;
+                        createVictorySound();
                         document.getElementById('victory').style.display = 'block';
                     } else if (portal.userData.nextRoom !== undefined) {
                         gameState.currentRoom = portal.userData.nextRoom;
