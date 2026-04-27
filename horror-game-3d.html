@@ -324,7 +324,13 @@
             arch.position.set(0, 10, -20);
             room.add(arch);
 
-            // Water floor
+            // Additional arch rings for visual depth
+            const archGeo2 = new THREE.CylinderGeometry(12, 12, 6, 32, 32, true, 0, Math.PI);
+            const arch2 = new THREE.Mesh(archGeo2, archMaterial);
+            arch2.position.set(0, 11, -22);
+            room.add(arch2);
+
+            // Water floor with wave pattern
             const floorGeometry = new THREE.PlaneGeometry(40, 40);
             const floorMaterial = new THREE.MeshStandardMaterial({
                 color: 0x223366,
@@ -344,17 +350,19 @@
             wallCollider.position.y = 15;
             room.add(wallCollider);
 
-            // Point light
-            const light1 = new THREE.PointLight(0x6699ff, 0.8, 40);
+            // Point light with shadow
+            const light1 = new THREE.PointLight(0x6699ff, 0.8, 50);
             light1.position.set(0, 15, -15);
+            light1.castShadow = true;
             room.add(light1);
 
             // Portal to next room
-            const portalGeo = new THREE.CylinderGeometry(2, 2, 0.1, 32);
+            const portalGeo = new THREE.CylinderGeometry(2.5, 2.5, 0.1, 32);
             const portalMat = new THREE.MeshStandardMaterial({
                 color: 0xffaa00,
                 emissive: 0xffaa00,
                 metalness: 1.0,
+                emissiveIntensity: 0.8,
             });
             const portal = new THREE.Mesh(portalGeo, portalMat);
             portal.position.set(0, 0.5, -35);
@@ -654,9 +662,11 @@
             });
             const glow1 = new THREE.Mesh(glowGeo, glowMat);
             glow1.position.set(-0.25, 1.5, 0.4);
+            glow1.userData.isGlow = true;
             group.add(glow1);
             const glow2 = new THREE.Mesh(glowGeo, glowMat);
             glow2.position.set(0.25, 1.5, 0.4);
+            glow2.userData.isGlow = true;
             group.add(glow2);
 
             group.position.set(x, 1, z);
@@ -842,6 +852,20 @@
         }
 
         // ============================================
+        // CREATURE EYE ANIMATION
+        // ============================================
+        function updateCreatureEyes() {
+            creatures.forEach(creature => {
+                creature.traverse(obj => {
+                    if (obj.userData?.isGlow) {
+                        const pulse = 0.15 + Math.sin(gameState.tick * 0.1) * 0.1;
+                        obj.material.opacity = pulse;
+                    }
+                });
+            });
+        }
+
+        // ============================================
         // MAIN GAME LOOP
         // ============================================
         function animate() {
@@ -857,6 +881,7 @@
             // Update game logic
             updatePlayerMovement();
             updateCreatureAI();
+            updateCreatureEyes();
             checkPortalProximity();
 
             // Render
